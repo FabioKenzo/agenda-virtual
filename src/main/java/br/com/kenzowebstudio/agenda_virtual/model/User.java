@@ -49,6 +49,6 @@ public class User {
     private LocalDateTime createdAt;
 
     @Column(name = "updated_at", nullable = false)
-    private LocalDateTime upDateTime;
+    private LocalDateTime updatedAt;
 
 }
