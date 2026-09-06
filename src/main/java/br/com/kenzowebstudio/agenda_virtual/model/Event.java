@@ -33,7 +33,7 @@ import lombok.Setter;
 @AllArgsConstructor
 @Builder
 public class Event {
-    
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -46,7 +46,7 @@ public class Event {
 
     @Column(nullable = false)
     private LocalDate data;
-    
+
     @Column(name = "hora_inicio")
     private LocalTime horaInicio;
 
@@ -59,7 +59,7 @@ public class Event {
     @Column(columnDefinition = "TEXT")
     private String observacoes;
 
-    @Column(name = "whatsapp_url",length = 500)
+    @Column(name = "whatsapp_url", length = 500)
     private String whatsappUrl;
 
     @Column(name = "banner_url", length = 500)
@@ -80,9 +80,7 @@ public class Event {
     private LocalDateTime updatedAt;
 
     @ManyToMany
-    @JoinTable(name = "event_students", 
-    joinColumns = @JoinColumn(name = "event_id"),
-    inverseJoinColumns = @JoinColumn(name = "student_id"))
+    @JoinTable(name = "event_students", joinColumns = @JoinColumn(name = "event_id"), inverseJoinColumns = @JoinColumn(name = "student_id"))
     @Builder.Default
     private Set<Student> students = new HashSet<>();
-}   
+}
