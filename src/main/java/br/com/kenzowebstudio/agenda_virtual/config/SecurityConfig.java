@@ -2,6 +2,7 @@ package br.com.kenzowebstudio.agenda_virtual.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -38,6 +39,12 @@ public class SecurityConfig {
                         .permitAll()
 
                         .requestMatchers("/admin/**").hasRole("ADMIN")
+
+                        .requestMatchers(HttpMethod.GET, "/events/**").authenticated()
+
+                        .requestMatchers(HttpMethod.POST, "/events/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/events/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/events/**").hasRole("ADMIN")
 
                         .anyRequest().authenticated())
 
