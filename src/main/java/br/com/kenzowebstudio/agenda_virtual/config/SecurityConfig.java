@@ -46,6 +46,12 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.PUT, "/events/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/events/**").hasRole("ADMIN")
 
+                        .requestMatchers(HttpMethod.GET, "/announcements/**").authenticated()
+
+                        .requestMatchers(HttpMethod.POST, "/announcements/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/announcements/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/announcements/**").hasRole("ADMIN")
+
                         .anyRequest().authenticated())
 
                 .addFilterBefore(
