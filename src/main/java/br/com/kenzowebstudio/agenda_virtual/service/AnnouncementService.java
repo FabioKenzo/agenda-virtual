@@ -57,10 +57,42 @@ public class AnnouncementService {
 
     public List<AnnouncementResponse> findAll() {
 
-    return announcementRepository.findAllByOrderByCreatedAtDesc()
-            .stream()
-            .map(this::toResponse)
-            .toList();
+        return announcementRepository.findAllByOrderByCreatedAtDesc()
+                .stream()
+                .map(this::toResponse)
+                .toList();
+    }
+
+    public AnnouncementResponse findById(Long id) {
+
+        Announcement announcement = announcementRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Comunicado não encontrado!"));
+
+        return toResponse(announcement);
+
+    }
+
+    public AnnouncementResponse update(Long id, AnnouncementRequest request) {
+
+        Announcement announcement = announcementRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Comunicado não encontrado!"));
+
+        announcement.setTitulo(request.titulo());
+        announcement.setConteudo(request.conteudo());
+        announcement.setAtivo(request.ativo());
+        announcement.setUpdatedAt(LocalDateTime.now());
+
+        Announcement updatedAnnouncement = announcementRepository.save(announcement);
+
+        return toResponse(updatedAnnouncement);
+    }
+
+    public void delete(Long id) {
+
+    Announcement announcement = announcementRepository.findById(id)
+            .orElseThrow(() -> new IllegalArgumentException("Comunicado não encontrado!"));
+
+    announcementRepository.delete(announcement);
 }
 
 }
