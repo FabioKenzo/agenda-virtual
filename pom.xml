@@ -25,17 +25,22 @@
     <description>Backend da Agenda Virtual Escolar</description>
 
     <!-- CONFIGURAÇÕES GERAIS -->
-
     <properties>
         <java.version>25</java.version>
     </properties>
+
     <dependencies>
 
         <!-- SPRING BOOT / API REST -->
-
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-webmvc</artifactId>
+        </dependency>
+
+        <!-- VALIDATION - VALIDAÇÃO DOS DTOs -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-validation</artifactId>
         </dependency>
 
         <!-- SPRING DATA JPA / HIBERNATE -->
@@ -51,6 +56,7 @@
         </dependency>
 
         <!-- JWT - JSON WEB TOKEN -->
+
         <!-- API utilizada diretamente no código -->
         <dependency>
             <groupId>io.jsonwebtoken</groupId>
@@ -113,7 +119,7 @@
             <scope>test</scope>
         </dependency>
 
-        <!-- TESTES - SPRING SECURITY                          -->
+        <!-- TESTES - SPRING SECURITY -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-security-test</artifactId>
@@ -126,7 +132,9 @@
             <artifactId>spring-boot-starter-webmvc-test</artifactId>
             <scope>test</scope>
         </dependency>
+
     </dependencies>
+
     <!-- BUILD / PLUGINS -->
     <build>
         <plugins>
@@ -135,6 +143,7 @@
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
+
                 <configuration>
                     <excludes>
                         <exclude>
@@ -149,13 +158,17 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
+
                 <executions>
+
                     <execution>
                         <id>default-compile</id>
                         <phase>compile</phase>
+
                         <goals>
                             <goal>compile</goal>
                         </goals>
+
                         <configuration>
                             <annotationProcessorPaths>
                                 <path>
@@ -165,6 +178,7 @@
                             </annotationProcessorPaths>
                         </configuration>
                     </execution>
+
                     <execution>
                         <id>default-testCompile</id>
                         <phase>test-compile</phase>
@@ -175,23 +189,18 @@
 
                         <configuration>
                             <annotationProcessorPaths>
-
                                 <path>
                                     <groupId>org.projectlombok</groupId>
                                     <artifactId>lombok</artifactId>
                                 </path>
-
                             </annotationProcessorPaths>
                         </configuration>
-
                     </execution>
 
                 </executions>
-
             </plugin>
 
         </plugins>
-
     </build>
 
 </project>

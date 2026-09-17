@@ -17,6 +17,7 @@ import br.com.kenzowebstudio.agenda_virtual.dto.UserRegisterResponse;
 import br.com.kenzowebstudio.agenda_virtual.model.User;
 import br.com.kenzowebstudio.agenda_virtual.security.JwtService;
 import br.com.kenzowebstudio.agenda_virtual.service.UserService;
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/auth")
@@ -39,7 +40,8 @@ public class AuthController {
 
     @PostMapping("/register")
     public ResponseEntity<UserRegisterResponse> register(
-            @RequestBody UserRegisterRequest request) {
+            @Valid @RequestBody UserRegisterRequest request) {
+
         UserRegisterResponse response = userService.register(request);
 
         return ResponseEntity

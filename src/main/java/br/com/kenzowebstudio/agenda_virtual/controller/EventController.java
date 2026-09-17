@@ -18,6 +18,7 @@ import br.com.kenzowebstudio.agenda_virtual.dto.EventRequest;
 import br.com.kenzowebstudio.agenda_virtual.dto.EventResponse;
 import br.com.kenzowebstudio.agenda_virtual.model.User;
 import br.com.kenzowebstudio.agenda_virtual.service.EventService;
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/events")
@@ -31,7 +32,7 @@ public class EventController {
 
     @PostMapping
     public ResponseEntity<EventResponse> create(
-            @RequestBody EventRequest request,
+            @Valid @RequestBody EventRequest request,
             @AuthenticationPrincipal User user) {
 
         EventResponse response = eventService.create(request, user);
@@ -57,7 +58,7 @@ public class EventController {
     @PutMapping("/{id}")
     public ResponseEntity<EventResponse> update(
             @PathVariable Long id,
-            @RequestBody EventRequest request) {
+            @Valid @RequestBody EventRequest request) {
         return ResponseEntity.ok(eventService.update(id, request));
     }
 

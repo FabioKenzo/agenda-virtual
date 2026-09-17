@@ -18,6 +18,7 @@ import br.com.kenzowebstudio.agenda_virtual.dto.AnnouncementRequest;
 import br.com.kenzowebstudio.agenda_virtual.dto.AnnouncementResponse;
 import br.com.kenzowebstudio.agenda_virtual.model.User;
 import br.com.kenzowebstudio.agenda_virtual.service.AnnouncementService;
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/announcements")
@@ -32,7 +33,7 @@ public class AnnouncementController {
 
     @PostMapping
     public ResponseEntity<AnnouncementResponse> create(
-            @RequestBody AnnouncementRequest request,
+            @Valid @RequestBody AnnouncementRequest request,
             @AuthenticationPrincipal User user) {
 
         AnnouncementResponse response = announcementService.create(request, user);
@@ -55,7 +56,7 @@ public class AnnouncementController {
 
     @PutMapping("/{id}")
     public ResponseEntity<AnnouncementResponse> update(@PathVariable Long id,
-            @RequestBody AnnouncementRequest request) {
+            @Valid @RequestBody AnnouncementRequest request) {
         return ResponseEntity.ok(announcementService.update(id, request));
     }
 

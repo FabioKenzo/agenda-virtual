@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 
 import br.com.kenzowebstudio.agenda_virtual.dto.AnnouncementRequest;
 import br.com.kenzowebstudio.agenda_virtual.dto.AnnouncementResponse;
+import br.com.kenzowebstudio.agenda_virtual.exception.ResourceNotFoundException;
 import br.com.kenzowebstudio.agenda_virtual.model.Announcement;
 import br.com.kenzowebstudio.agenda_virtual.model.User;
 import br.com.kenzowebstudio.agenda_virtual.repository.AnnouncementRepository;
@@ -66,7 +67,7 @@ public class AnnouncementService {
     public AnnouncementResponse findById(Long id) {
 
         Announcement announcement = announcementRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Comunicado não encontrado!"));
+                .orElseThrow(() ->  new ResourceNotFoundException("Comunicado não encontrado!"));
 
         return toResponse(announcement);
 
@@ -75,7 +76,7 @@ public class AnnouncementService {
     public AnnouncementResponse update(Long id, AnnouncementRequest request) {
 
         Announcement announcement = announcementRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Comunicado não encontrado!"));
+                .orElseThrow(() ->  new ResourceNotFoundException("Comunicado não encontrado!"));
 
         announcement.setTitulo(request.titulo());
         announcement.setConteudo(request.conteudo());
@@ -90,7 +91,7 @@ public class AnnouncementService {
     public void delete(Long id) {
 
     Announcement announcement = announcementRepository.findById(id)
-            .orElseThrow(() -> new IllegalArgumentException("Comunicado não encontrado!"));
+            .orElseThrow(() ->  new ResourceNotFoundException("Comunicado não encontrado!"));
 
     announcementRepository.delete(announcement);
 }

@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 
 import br.com.kenzowebstudio.agenda_virtual.dto.EventRequest;
 import br.com.kenzowebstudio.agenda_virtual.dto.EventResponse;
+import br.com.kenzowebstudio.agenda_virtual.exception.ResourceNotFoundException;
 import br.com.kenzowebstudio.agenda_virtual.model.Event;
 import br.com.kenzowebstudio.agenda_virtual.model.User;
 import br.com.kenzowebstudio.agenda_virtual.repository.EventRepository;
@@ -48,7 +49,7 @@ public class EventService {
     public EventResponse update(Long id, EventRequest request) {
 
         Event event = eventRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Evento não encontrado!"));
+                .orElseThrow(() -> new ResourceNotFoundException("Evento não encontrado!"));
 
         event.setTitulo(request.titulo());
         event.setDescricao(request.descricao());
@@ -67,7 +68,7 @@ public class EventService {
         return toResponse(updatedEvent);
     }
 
-    private EventResponse toResponse(Event event) {
+    private EventResponse toResponse(Event event) { 
         return new EventResponse(
                 event.getId(),
                 event.getTitulo(),
@@ -98,7 +99,7 @@ public class EventService {
     public EventResponse findById(Long id) {
 
         Event event = eventRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Evento não encontrado!"));
+                .orElseThrow(() -> new ResourceNotFoundException("Evento não encontrado!"));
 
         return toResponse(event);
     }
@@ -106,7 +107,7 @@ public class EventService {
     public void delete(Long id) {
 
         Event event = eventRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Evento não encontrado!"));
+                .orElseThrow(() -> new ResourceNotFoundException("Evento não encontrado!"));
 
         eventRepository.delete(event);
 
