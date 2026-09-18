@@ -1,29 +1,40 @@
 package br.com.kenzowebstudio.agenda_virtual.service;
 
 import java.time.LocalDateTime;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.springframework.stereotype.Service;
 
 import br.com.kenzowebstudio.agenda_virtual.dto.EventRequest;
 import br.com.kenzowebstudio.agenda_virtual.dto.EventResponse;
+import br.com.kenzowebstudio.agenda_virtual.dto.StudentResponse;
 import br.com.kenzowebstudio.agenda_virtual.exception.ResourceNotFoundException;
 import br.com.kenzowebstudio.agenda_virtual.model.Event;
+import br.com.kenzowebstudio.agenda_virtual.model.Student;
 import br.com.kenzowebstudio.agenda_virtual.model.User;
 import br.com.kenzowebstudio.agenda_virtual.repository.EventRepository;
+import br.com.kenzowebstudio.agenda_virtual.repository.StudentRepository;
 
 @Service
 public class EventService {
 
     private final EventRepository eventRepository;
 
-    public EventService(EventRepository eventRepository) {
+    private final StudentRepository studentRepository;
+
+    public EventService(
+            EventRepository eventRepository,
+            StudentRepository studentRepository) {
         this.eventRepository = eventRepository;
+        this.studentRepository = studentRepository;
     }
 
     public EventResponse create(EventRequest request, User user) {
 
         LocalDateTime now = LocalDateTime.now();
+        Set<Student> students = findStudentsByIds(request.studentIds());
 
         Event event = Event.builder()
                 .titulo(request.titulo())
@@ -39,6 +50,7 @@ public class EventService {
                 .createdBy(user)
                 .createdAt(now)
                 .updatedAt(now)
+                .students(students)
                 .build();
 
         Event savedEvent = eventRepository.save(event);
@@ -68,7 +80,17 @@ public class EventService {
         return toResponse(updatedEvent);
     }
 
-    private EventResponse toResponse(Event event) { 
+    private EventResponse toResponse(Event event) {
+
+        Set<StudentResponse> students = event.getStudents()
+                .stream()
+                .map(student -> new StudentResponse(
+                        student.getId(),
+                        student.getNome(),
+                        student.getDataNascimento(),
+                        student.getTurma()))
+                .collect(java.util.stream.Collectors.toSet());
+
         return new EventResponse(
                 event.getId(),
                 event.getTitulo(),
@@ -85,7 +107,8 @@ public class EventService {
                         ? event.getCreatedBy().getId()
                         : null,
                 event.getCreatedAt(),
-                event.getUpdatedAt());
+                event.getUpdatedAt(),
+                students);
     }
 
     public List<EventResponse> findAll() {
@@ -112,4 +135,20 @@ public class EventService {
         eventRepository.delete(event);
 
     }
+
+    private Set<Student> findStudentsByIds(Set<Long> studentIds) {
+
+        if (studentIds == null || studentIds.isEmpty()) {
+            return new HashSet<>();
+        }
+
+        List<Student> students = studentRepository.findAllById(studentIds);
+
+        if (students.size() != studentIds.size()) {
+            throw new ResourceNotFoundException("Um ou mais alunos informados não foram encontrados!");
+        }
+
+        return new HashSet<>(students);
+    }
+
 }

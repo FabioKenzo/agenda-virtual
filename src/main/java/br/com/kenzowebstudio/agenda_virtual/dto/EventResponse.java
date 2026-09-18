@@ -3,6 +3,7 @@ package br.com.kenzowebstudio.agenda_virtual.dto;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.Set;
 
 import br.com.kenzowebstudio.agenda_virtual.model.EventStatus;
 
@@ -20,6 +21,6 @@ public record EventResponse(
         EventStatus status,
         Long createdBy,
         LocalDateTime createdAt,
-        LocalDateTime updatedAt) {
-
+        LocalDateTime updatedAt,
+        Set<StudentResponse> students) {
 }
