@@ -63,6 +63,8 @@ public class EventService {
         Event event = eventRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Evento não encontrado!"));
 
+        Set<Student> students = findStudentsByIds(request.studentIds());
+
         event.setTitulo(request.titulo());
         event.setDescricao(request.descricao());
         event.setData(request.data());
@@ -73,6 +75,7 @@ public class EventService {
         event.setWhatsappUrl(request.whatsappUrl());
         event.setBannerUrl(request.bannerUrl());
         event.setStatus(request.status());
+        event.setStudents(students);
         event.setUpdatedAt(LocalDateTime.now());
 
         Event updatedEvent = eventRepository.save(event);
