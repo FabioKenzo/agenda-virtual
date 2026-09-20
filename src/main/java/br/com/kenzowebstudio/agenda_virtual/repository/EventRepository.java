@@ -9,4 +9,5 @@ import br.com.kenzowebstudio.agenda_virtual.model.Event;
 public interface EventRepository extends JpaRepository<Event, Long> {
     
     List<Event> findAllByOrderByDataAsc();
+    List<Event> findDistinctByStudentsUserIdOrderByDataAsc(Long userId);
 }

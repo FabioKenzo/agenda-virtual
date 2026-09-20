@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import br.com.kenzowebstudio.agenda_virtual.dto.ResponsibleEventResponse;
 import br.com.kenzowebstudio.agenda_virtual.dto.ResponsibleStudentResponse;
 import br.com.kenzowebstudio.agenda_virtual.model.User;
 import br.com.kenzowebstudio.agenda_virtual.service.ResponsibleService;
@@ -27,5 +28,13 @@ public class ResponsibleController {
             @AuthenticationPrincipal User user) {
 
         return ResponseEntity.ok(responsibleService.findStudents(user));
+    }
+
+    @GetMapping("/eventos")
+    public ResponseEntity<List<ResponsibleEventResponse>> findeEvents(
+            @AuthenticationPrincipal User user) {
+
+        return ResponseEntity.ok(responsibleService.findEvents(user));
+
     }
 }
