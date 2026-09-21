@@ -18,10 +18,13 @@ import br.com.kenzowebstudio.agenda_virtual.dto.EventRequest;
 import br.com.kenzowebstudio.agenda_virtual.dto.EventResponse;
 import br.com.kenzowebstudio.agenda_virtual.model.User;
 import br.com.kenzowebstudio.agenda_virtual.service.EventService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/events")
+@Tag(name = "Eventos", description = "Endpoints para consulta e gereciamento de eventos escolares")
 public class EventController {
 
     private final EventService eventService;
@@ -31,6 +34,7 @@ public class EventController {
     }
 
     @PostMapping
+    @Operation(summary = "Criar evento", description = "Cria um novo evento, apenas administradores")
     public ResponseEntity<EventResponse> create(
             @Valid @RequestBody EventRequest request,
             @AuthenticationPrincipal User user) {
@@ -43,12 +47,14 @@ public class EventController {
     }
 
     @GetMapping
+    @Operation(summary = "Listar Eventos", description = "Retorna os eventos cadastrados ordenados por data")
     public ResponseEntity<List<EventResponse>> findAll() {
 
         return ResponseEntity.ok(eventService.findAll());
     }
 
     @GetMapping("/{id}")
+    @Operation(summary = "Buscar eventos por ID", description = "Retorna os detalhes de um aviso especifico")
     public ResponseEntity<EventResponse> findById(@PathVariable Long id) {
 
         return ResponseEntity.ok(eventService.findById(id));
@@ -56,6 +62,7 @@ public class EventController {
     }
 
     @PutMapping("/{id}")
+    @Operation(summary = "Atualizar evento", description = "Exclui um evento existente, apenas administradores")
     public ResponseEntity<EventResponse> update(
             @PathVariable Long id,
             @Valid @RequestBody EventRequest request) {
@@ -63,6 +70,7 @@ public class EventController {
     }
 
     @DeleteMapping("/{id}")
+    @Operation(summary = "Excluir evento", description = "Exclui um evento existente, apenas administradores")
     public ResponseEntity<Void> delete(@PathVariable Long id){
 
         eventService.delete(id);

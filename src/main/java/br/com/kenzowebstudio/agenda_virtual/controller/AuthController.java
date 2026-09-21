@@ -17,10 +17,13 @@ import br.com.kenzowebstudio.agenda_virtual.dto.UserRegisterResponse;
 import br.com.kenzowebstudio.agenda_virtual.model.User;
 import br.com.kenzowebstudio.agenda_virtual.security.JwtService;
 import br.com.kenzowebstudio.agenda_virtual.service.UserService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/auth")
+@Tag(name = "Autenticacao", description = "Endpoints para cadastro e autenticacao de usuarios")
 public class AuthController {
 
     private final UserService userService;
@@ -39,6 +42,7 @@ public class AuthController {
     }
 
     @PostMapping("/register")
+    @Operation(summary = "Cadastrar responsavel", description = "Cadastra um novo responsavel e seus alunos")
     public ResponseEntity<UserRegisterResponse> register(
             @Valid @RequestBody UserRegisterRequest request) {
 
@@ -50,6 +54,7 @@ public class AuthController {
     }
 
     @PostMapping("/login")
+    @Operation(summary = "Realizar login", description = "Autentica o usuario atraves de email e senha e retorna token JWT")
     public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest request) {
 
         Authentication authentication = authenticationManager.authenticate(

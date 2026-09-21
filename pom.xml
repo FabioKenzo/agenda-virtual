@@ -37,6 +37,14 @@
             <artifactId>spring-boot-starter-webmvc</artifactId>
         </dependency>
 
+        <!-- SWAGGER OPEN API-->
+
+        <dependency>
+            <groupId>org.springdoc</groupId>
+            <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+            <version>3.1.0</version>
+        </dependency>
+
         <!-- VALIDATION - VALIDAÇÃO DOS DTOs -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
