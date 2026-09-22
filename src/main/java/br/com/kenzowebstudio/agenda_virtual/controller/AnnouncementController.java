@@ -18,10 +18,13 @@ import br.com.kenzowebstudio.agenda_virtual.dto.AnnouncementRequest;
 import br.com.kenzowebstudio.agenda_virtual.dto.AnnouncementResponse;
 import br.com.kenzowebstudio.agenda_virtual.model.User;
 import br.com.kenzowebstudio.agenda_virtual.service.AnnouncementService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/announcements")
+@Tag(name = "Comunicados", description = "Enpoints para consulta e gerenciamento de comunicados escolares")
 public class AnnouncementController {
 
     private final AnnouncementService announcementService;
@@ -32,6 +35,7 @@ public class AnnouncementController {
     }
 
     @PostMapping
+    @Operation(summary = "Criar comunicado", description = "Criar um novo comunicado, apenas administradores")
     public ResponseEntity<AnnouncementResponse> create(
             @Valid @RequestBody AnnouncementRequest request,
             @AuthenticationPrincipal User user) {
@@ -43,6 +47,7 @@ public class AnnouncementController {
     }
 
     @GetMapping
+    @Operation(summary = "Listar comunicados", description = "Retorna os comunicados cadastrados")
     public ResponseEntity<List<AnnouncementResponse>> findAll() {
 
         return ResponseEntity.ok(announcementService.findAll());
@@ -50,17 +55,20 @@ public class AnnouncementController {
     }
 
     @GetMapping("/{id}")
+    @Operation(summary = "Buscar comunicado por ID", description = "Retorna os detalhes de um comunicado especifico")
     public ResponseEntity<AnnouncementResponse> findById(@PathVariable Long id) {
         return ResponseEntity.ok(announcementService.findById(id));
     }
 
     @PutMapping("/{id}")
+    @Operation(summary = "Atualizar comunicado", description = "Atualiza os dados de um comunicado existente, apenas administradores")
     public ResponseEntity<AnnouncementResponse> update(@PathVariable Long id,
             @Valid @RequestBody AnnouncementRequest request) {
         return ResponseEntity.ok(announcementService.update(id, request));
     }
 
     @DeleteMapping("/{id}")
+    @Operation(summary = "Excluir comunicado", description = "Exclui comunicado existente, apenas administradores")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
 
         announcementService.delete(id);
