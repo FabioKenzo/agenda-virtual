@@ -29,115 +29,143 @@ import br.com.kenzowebstudio.agenda_virtual.model.EventStatus;
 import br.com.kenzowebstudio.agenda_virtual.model.User;
 
 @WebMvcTest(controllers = {
-        ResponsibleController.class,
-        EventController.class
+                ResponsibleController.class,
+                EventController.class
 
 })
 
 @Import(SecurityConfig.class)
 class SecurityIntegrationTest {
 
-    @Autowired
-    private MockMvc mockMvc;
+        @Autowired
+        private MockMvc mockMvc;
 
-    @MockitoBean
-    private ResponsibleService responsibleService;
+        @MockitoBean
+        private ResponsibleService responsibleService;
 
-    @MockitoBean
-    private JwtService jwtService;
+        @MockitoBean
+        private JwtService jwtService;
 
-    @MockitoBean
-    private CustomUserDetailsService customUserDetailsService;
+        @MockitoBean
+        private CustomUserDetailsService customUserDetailsService;
 
-    @MockitoBean
-    private EventService eventService;
+        @MockitoBean
+        private EventService eventService;
 
-    @MockitoBean
-    private PasswordEncoder passwordEncoder;
+        @MockitoBean
+        private PasswordEncoder passwordEncoder;
 
-    @Test
-    void deveBloquearEndpointDoResponsavelSemAutenticacao() throws Exception {
+        @Test
+        void deveBloquearEndpointDoResponsavelSemAutenticacao() throws Exception {
 
-        mockMvc.perform(
-                get("/responsavel/alunos"))
-                .andExpect(status().isUnauthorized());
-    }
+                mockMvc.perform(
+                                get("/responsavel/alunos"))
+                                .andExpect(status().isUnauthorized());
+        }
 
-    @Test
-    @WithMockUser(username = "responsavel@teste.com", roles = "RESPONSAVEL")
-    void devePermitirEndpointDoResponsavelParaRoleResponsavel() throws Exception {
+        @Test
+        @WithMockUser(username = "responsavel@teste.com", roles = "RESPONSAVEL")
+        void devePermitirEndpointDoResponsavelParaRoleResponsavel() throws Exception {
 
-        mockMvc.perform(
-                get("/responsavel/alunos"))
-                .andExpect(status().isOk());
-    }
+                mockMvc.perform(
+                                get("/responsavel/alunos"))
+                                .andExpect(status().isOk());
+        }
 
-    @Test
-    @WithMockUser(username = "admin@teste.com", roles = "ADMIN")
-    void deveBloquearEndpointDoResponsavelParaRoleAdmin() throws Exception {
+        @Test
+        @WithMockUser(username = "admin@teste.com", roles = "ADMIN")
+        void deveBloquearEndpointDoResponsavelParaRoleAdmin() throws Exception {
 
-        mockMvc.perform(
-                get("/responsavel/alunos"))
-                .andExpect(status().isForbidden());
-    }
+                mockMvc.perform(
+                                get("/responsavel/alunos"))
+                                .andExpect(status().isForbidden());
+        }
 
-    @Test
-    @WithMockUser(username = "responsavel@teste.com", roles = "RESPONSAVEL")
-    void deveBloquearCriacaoDeEventoParaRoleResponsavel() throws Exception {
+        @Test
+        @WithMockUser(username = "responsavel@teste.com", roles = "RESPONSAVEL")
+        void deveBloquearCriacaoDeEventoParaRoleResponsavel() throws Exception {
 
-        mockMvc.perform(
-                post("/events")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{}"))
-                .andExpect(status().isForbidden());
-    }
+                mockMvc.perform(
+                                post("/events")
+                                                .contentType(MediaType.APPLICATION_JSON)
+                                                .content("{}"))
+                                .andExpect(status().isForbidden());
+        }
 
-    @Test
-    @WithMockUser(username = "admin@teste.com", roles = "ADMIN")
-    void devePermitirCriacaoDeEventoParaRoleAdmin() throws Exception {
+        @Test
+        @WithMockUser(username = "admin@teste.com", roles = "ADMIN")
+        void devePermitirCriacaoDeEventoParaRoleAdmin() throws Exception {
 
-        EventResponse response = new EventResponse(
-                1L,
-                "Reunião de Pais",
-                "Reunião com os responsáveis",
-                LocalDate.of(2026, 10, 10),
-                LocalTime.of(18, 0),
-                LocalTime.of(19, 0),
-                "Auditório",
-                "Chegar com 10 minutos de antecedência",
-                "https://wa.me/exemplo",
-                "https://exemplo.com/banner.jpg",
-                EventStatus.AGENDADO,
-                1L,
-                LocalDateTime.now(),
-                LocalDateTime.now(),
-                Set.of());
+                EventResponse response = new EventResponse(
+                                1L,
+                                "Reunião de Pais",
+                                "Reunião com os responsáveis",
+                                LocalDate.of(2026, 10, 10),
+                                LocalTime.of(18, 0),
+                                LocalTime.of(19, 0),
+                                "Auditório",
+                                "Chegar com 10 minutos de antecedência",
+                                "https://wa.me/exemplo",
+                                "https://exemplo.com/banner.jpg",
+                                EventStatus.AGENDADO,
+                                1L,
+                                LocalDateTime.now(),
+                                LocalDateTime.now(),
+                                Set.of());
 
-        when(eventService.create(
-                any(EventRequest.class),
-                any(User.class))).thenReturn(response);
+                when(eventService.create(
+                                any(EventRequest.class),
+                                any(User.class))).thenReturn(response);
 
-        String json = """
-                {
-                    "titulo": "Reunião de Pais",
-                    "descricao": "Reunião com os responsáveis",
-                    "data": "2026-10-10",
-                    "horaInicio": "18:00:00",
-                    "horaFim": "19:00:00",
-                    "local": "Auditório",
-                    "observacoes": "Chegar com 10 minutos de antecedência",
-                    "whatsappUrl": "https://wa.me/exemplo",
-                    "bannerUrl": "https://exemplo.com/banner.jpg",
-                    "status": "AGENDADO",
-                    "studentIds": []
-                }
-                """;
+                String json = """
+                                {
+                                    "titulo": "Reunião de Pais",
+                                    "descricao": "Reunião com os responsáveis",
+                                    "data": "2026-10-10",
+                                    "horaInicio": "18:00:00",
+                                    "horaFim": "19:00:00",
+                                    "local": "Auditório",
+                                    "observacoes": "Chegar com 10 minutos de antecedência",
+                                    "whatsappUrl": "https://wa.me/exemplo",
+                                    "bannerUrl": "https://exemplo.com/banner.jpg",
+                                    "status": "AGENDADO",
+                                    "studentIds": []
+                                }
+                                """;
 
-        mockMvc.perform(
-                post("/events")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(json))
-                .andExpect(status().isCreated());
-    }
+                mockMvc.perform(
+                                post("/events")
+                                                .contentType(MediaType.APPLICATION_JSON)
+                                                .content(json))
+                                .andExpect(status().isCreated());
+        }
+
+        @Test
+        void deveRetornar401QuandoTokenJwtForInvalido() throws Exception {
+
+                when(jwtService.extractUsername("token-invalido"))
+                                .thenThrow(new io.jsonwebtoken.MalformedJwtException(
+                                                "Token JWT inválido"));
+
+                mockMvc.perform(
+                                get("/responsavel/alunos")
+                                                .header("Authorization", "Bearer token-invalido"))
+                                .andExpect(status().isUnauthorized());
+        }
+
+        @Test
+        void deveRetornar401QuandoTokenJwtEstiverExpirado() throws Exception {
+
+                when(jwtService.extractUsername("token-expirado"))
+                                .thenThrow(new io.jsonwebtoken.ExpiredJwtException(
+                                                null,
+                                                null,
+                                                "Token JWT expirado"));
+
+                mockMvc.perform(
+                                get("/responsavel/alunos")
+                                                .header("Authorization","Bearer token-expirado"))
+                                .andExpect(status().isUnauthorized());
+        }
 
 }
