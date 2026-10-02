@@ -28,10 +28,13 @@ import br.com.kenzowebstudio.agenda_virtual.dto.EventResponse;
 import br.com.kenzowebstudio.agenda_virtual.model.EventStatus;
 import br.com.kenzowebstudio.agenda_virtual.model.User;
 
+import br.com.kenzowebstudio.agenda_virtual.controller.AnnouncementController;
+import br.com.kenzowebstudio.agenda_virtual.service.AnnouncementService;
+
 @WebMvcTest(controllers = {
                 ResponsibleController.class,
-                EventController.class
-
+                EventController.class,
+                AnnouncementController.class
 })
 
 @Import(SecurityConfig.class)
@@ -54,6 +57,9 @@ class SecurityIntegrationTest {
 
         @MockitoBean
         private PasswordEncoder passwordEncoder;
+
+        @MockitoBean
+        private AnnouncementService announcementService;
 
         @Test
         void deveBloquearEndpointDoResponsavelSemAutenticacao() throws Exception {
@@ -164,8 +170,58 @@ class SecurityIntegrationTest {
 
                 mockMvc.perform(
                                 get("/responsavel/alunos")
-                                                .header("Authorization","Bearer token-expirado"))
+                                                .header("Authorization", "Bearer token-expirado"))
                                 .andExpect(status().isUnauthorized());
+        }
+
+        @Test
+        @WithMockUser(username = "responsavel@teste.com", roles = "RESPONSAVEL")
+        void deveBloquearListagemAdministrativaDeEventosParaResponsavel()
+                        throws Exception {
+
+                mockMvc.perform(
+                                get("/events"))
+                                .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @WithMockUser(username = "responsavel@teste.com", roles = "RESPONSAVEL")
+        void deveBloquearListagemAdministrativaDeComunicadosParaResponsavel()
+                        throws Exception {
+
+                mockMvc.perform(
+                                get("/announcements"))
+                                .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @WithMockUser(username = "admin@teste.com", roles = "ADMIN")
+        void devePermitirListagemAdministrativaDeEventosParaAdmin()
+                        throws Exception {
+
+                mockMvc.perform(
+                                get("/events"))
+                                .andExpect(status().isOk());
+        }
+
+        @Test
+        @WithMockUser(username = "admin@teste.com", roles = "ADMIN")
+        void devePermitirListagemAdministrativaDeComunicadosParaAdmin()
+                        throws Exception {
+
+                mockMvc.perform(
+                                get("/announcements"))
+                                .andExpect(status().isOk());
+        }
+
+        @Test
+        @WithMockUser(username = "responsavel@teste.com", roles = "RESPONSAVEL")
+        void devePermitirListagemDeComunicadosParaResponsavel()
+                        throws Exception {
+
+                mockMvc.perform(
+                                get("/responsavel/comunicados"))
+                                .andExpect(status().isOk());
         }
 
 }

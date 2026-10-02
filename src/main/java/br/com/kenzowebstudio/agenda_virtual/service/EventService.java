@@ -33,6 +33,7 @@ public class EventService {
 
     public EventResponse create(EventRequest request, User user) {
 
+        validateEventTimes(request);
         LocalDateTime now = LocalDateTime.now();
         Set<Student> students = findStudentsByIds(request.studentIds());
 
@@ -60,6 +61,7 @@ public class EventService {
 
     public EventResponse update(Long id, EventRequest request) {
 
+        validateEventTimes(request);
         Event event = eventRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Evento não encontrado!"));
 
@@ -152,6 +154,17 @@ public class EventService {
         }
 
         return new HashSet<>(students);
+    }
+
+    private void validateEventTimes(EventRequest request) {
+
+        if (request.horaInicio() != null
+                && request.horaFim() != null
+                && !request.horaFim().isAfter(request.horaInicio())) {
+
+            throw new IllegalArgumentException(
+                    "A hora de término deve ser posterior à hora de início");
+        }
     }
 
 }

@@ -4,9 +4,11 @@ import java.util.List;
 
 import org.springframework.stereotype.Service;
 
+import br.com.kenzowebstudio.agenda_virtual.dto.AnnouncementResponse;
 import br.com.kenzowebstudio.agenda_virtual.dto.ResponsibleEventResponse;
 import br.com.kenzowebstudio.agenda_virtual.dto.ResponsibleStudentResponse;
 import br.com.kenzowebstudio.agenda_virtual.model.User;
+import br.com.kenzowebstudio.agenda_virtual.repository.AnnouncementRepository;
 import br.com.kenzowebstudio.agenda_virtual.repository.EventRepository;
 import br.com.kenzowebstudio.agenda_virtual.repository.StudentRepository;
 
@@ -15,14 +17,16 @@ public class ResponsibleService {
 
     private final StudentRepository studentRepository;
     private final EventRepository eventRepository;
+    private final AnnouncementRepository announcementRepository;
 
     public ResponsibleService(
             StudentRepository studentRepository,
-            EventRepository eventRepository) {
+            EventRepository eventRepository,
+            AnnouncementRepository announcementRepository) {
 
         this.studentRepository = studentRepository;
         this.eventRepository = eventRepository;
-
+        this.announcementRepository = announcementRepository;
     }
 
     public List<ResponsibleStudentResponse> findStudents(User user) {
@@ -37,22 +41,40 @@ public class ResponsibleService {
                 .toList();
     }
 
-    public List<ResponsibleEventResponse> findEvents(User user){
+    public List<ResponsibleEventResponse> findEvents(User user) {
 
         return eventRepository.findDistinctByStudentsUserIdOrderByDataAsc(user.getId())
-            .stream()
-            .map(event -> new ResponsibleEventResponse(
-                 event.getId(),
-                    event.getTitulo(),
-                    event.getDescricao(),
-                    event.getData(),
-                    event.getHoraInicio(),
-                    event.getHoraFim(),
-                    event.getLocal(),
-                    event.getObservacoes(),
-                    event.getWhatsappUrl(),
-                    event.getBannerUrl(),
-                    event.getStatus()
-            )).toList();
+                .stream()
+                .map(event -> new ResponsibleEventResponse(
+                        event.getId(),
+                        event.getTitulo(),
+                        event.getDescricao(),
+                        event.getData(),
+                        event.getHoraInicio(),
+                        event.getHoraFim(),
+                        event.getLocal(),
+                        event.getObservacoes(),
+                        event.getWhatsappUrl(),
+                        event.getBannerUrl(),
+                        event.getStatus()))
+                .toList();
+    }
+
+    public List<AnnouncementResponse> findAnnouncements() {
+
+        return announcementRepository
+                .findByAtivoTrueOrderByCreatedAtDesc()
+                .stream()
+                .map(announcement -> new AnnouncementResponse(
+                        announcement.getId(),
+                        announcement.getTitulo(),
+                        announcement.getConteudo(),
+                        announcement.getAtivo(),
+                        announcement.getCreatedBy() != null
+                                ? announcement.getCreatedBy().getId()
+                                : null,
+                        announcement.getCreatedAt(),
+                        announcement.getUpdatedAt()))
+                .toList();
     }
 }

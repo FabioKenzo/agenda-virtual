@@ -9,4 +9,5 @@ import br.com.kenzowebstudio.agenda_virtual.model.Announcement;
 public interface AnnouncementRepository extends JpaRepository<Announcement, Long> {
 
     List<Announcement> findAllByOrderByCreatedAtDesc();
+    List<Announcement> findByAtivoTrueOrderByCreatedAtDesc();
 }

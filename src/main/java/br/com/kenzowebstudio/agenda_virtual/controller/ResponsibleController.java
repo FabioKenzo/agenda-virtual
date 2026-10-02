@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import br.com.kenzowebstudio.agenda_virtual.dto.AnnouncementResponse;
 import br.com.kenzowebstudio.agenda_virtual.dto.ResponsibleEventResponse;
 import br.com.kenzowebstudio.agenda_virtual.dto.ResponsibleStudentResponse;
 import br.com.kenzowebstudio.agenda_virtual.model.User;
@@ -41,5 +42,13 @@ public class ResponsibleController {
 
         return ResponseEntity.ok(responsibleService.findEvents(user));
 
+    }
+
+    @GetMapping("/comunicados")
+    @Operation(summary = "Listar comunicados ativos", description = "Retorna os comunicados ativos disponíveis para o responsavel autenticado")
+    public ResponseEntity<List<AnnouncementResponse>> findAnnouncements() {
+
+        return ResponseEntity.ok(
+                responsibleService.findAnnouncements());
     }
 }
