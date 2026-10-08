@@ -18,6 +18,8 @@ import java.util.List;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
+import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
 
 @Configuration
 public class SecurityConfig {
@@ -31,7 +33,12 @@ public class SecurityConfig {
         @Bean
         public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 
-                http.csrf(csrf -> csrf.disable())
+                http.csrf(csrf -> csrf
+                                .csrfTokenRepository(
+                                                CookieCsrfTokenRepository.withHttpOnlyFalse())
+                                .csrfTokenRequestHandler(
+                                                new CsrfTokenRequestAttributeHandler())
+                                .ignoringRequestMatchers("/auth/login", "/auth/register"))
 
                                 .cors(cors -> {
                                 })
@@ -47,8 +54,10 @@ public class SecurityConfig {
                                                 .requestMatchers(
                                                                 "/auth/register",
                                                                 "/auth/login",
+                                                                "/auth/csrf",
                                                                 "/swagger-ui/**",
                                                                 "/v3/api-docs/**")
+                                                        
                                                 .permitAll()
 
                                                 // RESPONSAVEL
@@ -93,7 +102,10 @@ public class SecurityConfig {
 
                 configuration.setAllowedHeaders(List.of(
                                 "Authorization",
-                                "Content-Type"));
+                                "Content-Type",
+                                "X-XSRF-TOKEN"));
+
+                configuration.setAllowCredentials(true);
 
                 UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
 
