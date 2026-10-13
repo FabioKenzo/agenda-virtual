@@ -15,6 +15,7 @@ import br.com.kenzowebstudio.agenda_virtual.model.User;
 import br.com.kenzowebstudio.agenda_virtual.service.ResponsibleService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.web.bind.annotation.PathVariable;
 
 @RestController
 @RequestMapping("/responsavel")
@@ -51,4 +52,14 @@ public class ResponsibleController {
         return ResponseEntity.ok(
                 responsibleService.findAnnouncements());
     }
+
+    @GetMapping("/comunicados/{id}")
+    @Operation(summary = "Buscar comunicado por ID", description = "Retorna os detalhes de um comunicado ativo para o responsável autenticado")
+    public ResponseEntity<AnnouncementResponse> findAnnouncementById(
+            @PathVariable Long id) {
+
+        return ResponseEntity.ok(
+                responsibleService.findAnnouncementById(id));
+    }
+
 }

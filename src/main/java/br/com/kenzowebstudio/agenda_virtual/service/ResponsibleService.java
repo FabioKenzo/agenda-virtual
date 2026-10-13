@@ -2,7 +2,9 @@ package br.com.kenzowebstudio.agenda_virtual.service;
 
 import java.util.List;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import br.com.kenzowebstudio.agenda_virtual.dto.AnnouncementResponse;
 import br.com.kenzowebstudio.agenda_virtual.dto.ResponsibleEventResponse;
@@ -15,66 +17,87 @@ import br.com.kenzowebstudio.agenda_virtual.repository.StudentRepository;
 @Service
 public class ResponsibleService {
 
-    private final StudentRepository studentRepository;
-    private final EventRepository eventRepository;
-    private final AnnouncementRepository announcementRepository;
+        private final StudentRepository studentRepository;
+        private final EventRepository eventRepository;
+        private final AnnouncementRepository announcementRepository;
 
-    public ResponsibleService(
-            StudentRepository studentRepository,
-            EventRepository eventRepository,
-            AnnouncementRepository announcementRepository) {
+        public ResponsibleService(
+                        StudentRepository studentRepository,
+                        EventRepository eventRepository,
+                        AnnouncementRepository announcementRepository) {
 
-        this.studentRepository = studentRepository;
-        this.eventRepository = eventRepository;
-        this.announcementRepository = announcementRepository;
-    }
+                this.studentRepository = studentRepository;
+                this.eventRepository = eventRepository;
+                this.announcementRepository = announcementRepository;
+        }
 
-    public List<ResponsibleStudentResponse> findStudents(User user) {
+        public List<ResponsibleStudentResponse> findStudents(User user) {
 
-        return studentRepository.findByUserId(user.getId())
-                .stream()
-                .map(student -> new ResponsibleStudentResponse(
-                        student.getId(),
-                        student.getNome(),
-                        student.getDataNascimento(),
-                        student.getTurma()))
-                .toList();
-    }
+                return studentRepository.findByUserId(user.getId())
+                                .stream()
+                                .map(student -> new ResponsibleStudentResponse(
+                                                student.getId(),
+                                                student.getNome(),
+                                                student.getDataNascimento(),
+                                                student.getTurma()))
+                                .toList();
+        }
 
-    public List<ResponsibleEventResponse> findEvents(User user) {
+        public List<ResponsibleEventResponse> findEvents(User user) {
 
-        return eventRepository.findDistinctByStudentsUserIdOrderByDataAsc(user.getId())
-                .stream()
-                .map(event -> new ResponsibleEventResponse(
-                        event.getId(),
-                        event.getTitulo(),
-                        event.getDescricao(),
-                        event.getData(),
-                        event.getHoraInicio(),
-                        event.getHoraFim(),
-                        event.getLocal(),
-                        event.getObservacoes(),
-                        event.getWhatsappUrl(),
-                        event.getBannerUrl(),
-                        event.getStatus()))
-                .toList();
-    }
+                return eventRepository.findDistinctByStudentsUserIdOrderByDataAsc(user.getId())
+                                .stream()
+                                .map(event -> new ResponsibleEventResponse(
+                                                event.getId(),
+                                                event.getTitulo(),
+                                                event.getDescricao(),
+                                                event.getData(),
+                                                event.getHoraInicio(),
+                                                event.getHoraFim(),
+                                                event.getLocal(),
+                                                event.getObservacoes(),
+                                                event.getWhatsappUrl(),
+                                                event.getBannerUrl(),
+                                                event.getStatus()))
+                                .toList();
+        }
 
-    public List<AnnouncementResponse> findAnnouncements() {
+        public List<AnnouncementResponse> findAnnouncements() {
 
-        return announcementRepository
-                .findByAtivoTrueOrderByCreatedAtDesc()
-                .stream()
-                .map(announcement -> new AnnouncementResponse(
-                        announcement.getId(),
-                        announcement.getTitulo(),
-                        announcement.getConteudo(),
-                        announcement.getAtivo(),
-                        announcement.getCreatedBy() != null
-                                ? announcement.getCreatedBy().getId()
-                                : null,
-                        announcement.getCreatedAt(),
-                        announcement.getUpdatedAt()))
-                .toList();
-    }
+                return announcementRepository
+                                .findByAtivoTrueOrderByCreatedAtDesc()
+                                .stream()
+                                .map(announcement -> new AnnouncementResponse(
+                                                announcement.getId(),
+                                                announcement.getTitulo(),
+                                                announcement.getConteudo(),
+                                                announcement.getAtivo(),
+                                                announcement.getCreatedBy() != null
+                                                                ? announcement.getCreatedBy().getId()
+                                                                : null,
+                                                announcement.getCreatedAt(),
+                                                announcement.getUpdatedAt()))
+                                .toList();
+        }
+
+        public AnnouncementResponse findAnnouncementById(Long id) {
+
+                var announcement = announcementRepository
+                                .findByIdAndAtivoTrue(id)
+                                .orElseThrow(() -> new ResponseStatusException(
+                                                HttpStatus.NOT_FOUND,
+                                                "Comunicado não encontrado"));
+
+                return new AnnouncementResponse(
+                                announcement.getId(),
+                                announcement.getTitulo(),
+                                announcement.getConteudo(),
+                                announcement.getAtivo(),
+                                announcement.getCreatedBy() != null
+                                                ? announcement.getCreatedBy().getId()
+                                                : null,
+                                announcement.getCreatedAt(),
+                                announcement.getUpdatedAt());
+        }
+
 }
