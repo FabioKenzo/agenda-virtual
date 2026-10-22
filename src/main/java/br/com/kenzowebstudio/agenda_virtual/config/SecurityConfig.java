@@ -12,6 +12,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import br.com.kenzowebstudio.agenda_virtual.security.JwtAuthenticationFilter;
+import jakarta.servlet.DispatcherType;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 import java.util.List;
@@ -49,6 +51,9 @@ public class SecurityConfig {
                                                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
                                 .authorizeHttpRequests(auth -> auth
+                                                
+                                                //permite o processamento interno de erros
+                                                .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
 
                                                 // AUTENTICACAO E SWAGGER
                                                 .requestMatchers(
