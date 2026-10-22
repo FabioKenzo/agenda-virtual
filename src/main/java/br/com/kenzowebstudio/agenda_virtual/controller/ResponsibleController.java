@@ -45,6 +45,16 @@ public class ResponsibleController {
 
     }
 
+    @GetMapping("/eventos/{id}")
+    @Operation(summary = "Buscar evento por ID", description = "Retorna os detalhes de um evento associado aos alunos do responsável autenticado")
+    public ResponseEntity<ResponsibleEventResponse> findEventById(
+            @PathVariable Long id,
+            @AuthenticationPrincipal User user) {
+
+        return ResponseEntity.ok(
+                responsibleService.findEventById(id, user));
+    }
+
     @GetMapping("/comunicados")
     @Operation(summary = "Listar comunicados ativos", description = "Retorna os comunicados ativos disponíveis para o responsavel autenticado")
     public ResponseEntity<List<AnnouncementResponse>> findAnnouncements() {

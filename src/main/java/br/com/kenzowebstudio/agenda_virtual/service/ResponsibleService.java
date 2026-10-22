@@ -62,6 +62,28 @@ public class ResponsibleService {
                                 .toList();
         }
 
+        public ResponsibleEventResponse findEventById(Long id, User user) {
+
+                var event = eventRepository
+                                .findDistinctByIdAndStudentsUserId(id, user.getId())
+                                .orElseThrow(() -> new ResponseStatusException(
+                                                HttpStatus.NOT_FOUND,
+                                                "Evento não encontrado"));
+
+                return new ResponsibleEventResponse(
+                                event.getId(),
+                                event.getTitulo(),
+                                event.getDescricao(),
+                                event.getData(),
+                                event.getHoraInicio(),
+                                event.getHoraFim(),
+                                event.getLocal(),
+                                event.getObservacoes(),
+                                event.getWhatsappUrl(),
+                                event.getBannerUrl(),
+                                event.getStatus());
+        }
+
         public List<AnnouncementResponse> findAnnouncements() {
 
                 return announcementRepository
