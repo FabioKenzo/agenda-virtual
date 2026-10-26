@@ -21,84 +21,94 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import br.com.kenzowebstudio.agenda_virtual.dto.AuthMeResponse;
 
 @RestController
 @RequestMapping("/auth")
 @Tag(name = "Autenticacao", description = "Endpoints para cadastro e autenticacao de usuarios")
 public class AuthController {
 
-    private final UserService userService;
-    private final AuthenticationManager authenticationManager;
-    private final JwtService jwtService;
+        private final UserService userService;
+        private final AuthenticationManager authenticationManager;
+        private final JwtService jwtService;
 
-    public AuthController(
-            UserService userService,
-            AuthenticationManager authenticationManager,
-            JwtService jwtService) {
+        public AuthController(
+                        UserService userService,
+                        AuthenticationManager authenticationManager,
+                        JwtService jwtService) {
 
-        this.userService = userService;
-        this.authenticationManager = authenticationManager;
-        this.jwtService = jwtService;
+                this.userService = userService;
+                this.authenticationManager = authenticationManager;
+                this.jwtService = jwtService;
 
-    }
+        }
 
-    @PostMapping("/register")
-    @Operation(summary = "Cadastrar responsavel", description = "Cadastra um novo responsavel e seus alunos")
-    public ResponseEntity<UserRegisterResponse> register(
-            @Valid @RequestBody UserRegisterRequest request) {
+        @PostMapping("/register")
+        @Operation(summary = "Cadastrar responsavel", description = "Cadastra um novo responsavel e seus alunos")
+        public ResponseEntity<UserRegisterResponse> register(
+                        @Valid @RequestBody UserRegisterRequest request) {
 
-        UserRegisterResponse response = userService.register(request);
+                UserRegisterResponse response = userService.register(request);
 
-        return ResponseEntity
-                .status(HttpStatus.CREATED)
-                .body(response);
-    }
+                return ResponseEntity
+                                .status(HttpStatus.CREATED)
+                                .body(response);
+        }
 
-    @PostMapping("/login")
-    @Operation(summary = "Realizar login", description = "Autentica o usuario atraves de email e senha e retorna token JWT")
-    public ResponseEntity<Void> login(@RequestBody LoginRequest request) {
+        @PostMapping("/login")
+        @Operation(summary = "Realizar login", description = "Autentica o usuario atraves de email e senha e retorna token JWT")
+        public ResponseEntity<Void> login(@RequestBody LoginRequest request) {
 
-        Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(
-                        request.email(), request.senha()));
+                Authentication authentication = authenticationManager.authenticate(
+                                new UsernamePasswordAuthenticationToken(
+                                                request.email(), request.senha()));
 
-        User user = (User) authentication.getPrincipal();
+                User user = (User) authentication.getPrincipal();
 
-        String token = jwtService.generateToken(user);
+                String token = jwtService.generateToken(user);
 
-        ResponseCookie cookie = ResponseCookie.from("access_token", token)
-                .httpOnly(true)
-                .secure(false) // localmente por enquanto depois mudar
-                .sameSite("Lax")
-                .path("/")
-                .maxAge(86400)
-                .build();
+                ResponseCookie cookie = ResponseCookie.from("access_token", token)
+                                .httpOnly(true)
+                                .secure(false) // localmente por enquanto depois mudar
+                                .sameSite("Lax")
+                                .path("/")
+                                .maxAge(86400)
+                                .build();
 
-        return ResponseEntity.ok()
-                .header(HttpHeaders.SET_COOKIE, cookie.toString())
-                .build();
+                return ResponseEntity.ok()
+                                .header(HttpHeaders.SET_COOKIE, cookie.toString())
+                                .build();
 
-    }
+        }
 
-    @PostMapping("/logout")
-    public ResponseEntity<Void> logout() {
+        @PostMapping("/logout")
+        public ResponseEntity<Void> logout() {
 
-        ResponseCookie cookie = ResponseCookie.from("access_token", "")
-                .httpOnly(true)
-                .secure(false) // apenas pro localhost dps mudar
-                .sameSite("Lax")
-                .path("/")
-                .maxAge(0)
-                .build();
+                ResponseCookie cookie = ResponseCookie.from("access_token", "")
+                                .httpOnly(true)
+                                .secure(false) // apenas pro localhost dps mudar
+                                .sameSite("Lax")
+                                .path("/")
+                                .maxAge(0)
+                                .build();
 
-        return ResponseEntity.noContent()
-                .header(HttpHeaders.SET_COOKIE, cookie.toString())
-                .build();
-    }
+                return ResponseEntity.noContent()
+                                .header(HttpHeaders.SET_COOKIE, cookie.toString())
+                                .build();
+        }
 
+        @GetMapping("/me")
+        @Operation(summary = "Consultar usuário autenticado", description = "Retorna os dados básicos do usuário autenticado")
+        public ResponseEntity<AuthMeResponse> me(
+                        @AuthenticationPrincipal User user) {
 
-    @GetMapping("/me")
-    public ResponseEntity<Void> me() {
-        return ResponseEntity.ok().build();
-    }
+                AuthMeResponse response = new AuthMeResponse(
+                                user.getId(),
+                                user.getNome(),
+                                user.getEmail(),
+                                user.getRole());
+
+                return ResponseEntity.ok(response);
+        }
 }
