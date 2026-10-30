@@ -2,16 +2,17 @@ package br.com.kenzowebstudio.agenda_virtual.exception;
 
 import java.time.LocalDateTime;
 import java.util.stream.Collectors;
-
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
-
 import br.com.kenzowebstudio.agenda_virtual.dto.ApiErrorResponse;
 import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
+
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -85,6 +86,23 @@ public class GlobalExceptionHandler {
                                 status.value(),
                                 status.getReasonPhrase(),
                                 exception.getMessage(),
+                                request.getRequestURI());
+
+                return ResponseEntity.status(status).body(error);
+        }
+
+        @ExceptionHandler(MaxUploadSizeExceededException.class)
+        public ResponseEntity<ApiErrorResponse> handleMaxUploadSizeExceeded(
+                        MaxUploadSizeExceededException exception,
+                        HttpServletRequest request) {
+
+               HttpStatusCode status = HttpStatusCode.valueOf(413);
+
+                ApiErrorResponse error = new ApiErrorResponse(
+                                LocalDateTime.now(),
+                                status.value(),
+                                "Payload Too Large",
+                                "O arquivo enviado ultrapassa o tamanho máximo permitido.",
                                 request.getRequestURI());
 
                 return ResponseEntity.status(status).body(error);
