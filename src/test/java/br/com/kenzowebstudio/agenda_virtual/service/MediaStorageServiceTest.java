@@ -3,8 +3,10 @@ package br.com.kenzowebstudio.agenda_virtual.service;
 import static org.junit.jupiter.api.Assertions.*;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.FileSystemException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.springframework.mock.web.MockMultipartFile;
@@ -13,6 +15,7 @@ import java.io.ByteArrayOutputStream;
 import javax.imageio.ImageIO;
 import org.springframework.core.io.Resource;
 import br.com.kenzowebstudio.agenda_virtual.exception.ResourceNotFoundException;
+
 
 class MediaStorageServiceTest {
 
@@ -258,4 +261,47 @@ class MediaStorageServiceTest {
                                 "Arquivo de mídia não encontrado.",
                                 exception.getMessage());
         }
+
+        @Test
+        void deveRejeitarLinkSimbolicoAoCarregarImagem() throws IOException {
+
+                MediaStorageService service = new MediaStorageService(tempDir.toString());
+
+                String storedFilename = "550e8400-e29b-41d4-a716-446655440000.png";
+
+                Path arquivoExterno = Files.createTempFile(
+                                "arquivo-externo-",
+                                ".txt");
+
+                try {
+                        Path link = tempDir.resolve(storedFilename);
+
+                        try {
+                                Files.createSymbolicLink(link, arquivoExterno);
+
+                        } catch (FileSystemException | SecurityException e) {
+                                Assumptions.assumeTrue(
+                                                false,
+                                                "O ambiente não permite criar links simbólicos: "
+                                                                + e.getMessage());
+
+                        } catch (UnsupportedOperationException e) {
+                                Assumptions.assumeTrue(
+                                                false,
+                                                "O sistema de arquivos não suporta links simbólicos.");
+                        }
+
+                        IllegalStateException exception = assertThrows(
+                                        IllegalStateException.class,
+                                        () -> service.load(storedFilename));
+
+                        assertEquals(
+                                        "O arquivo de mídia não está disponível.",
+                                        exception.getMessage());
+
+                } finally {
+                        Files.deleteIfExists(arquivoExterno);
+                }
+        }
+
 }

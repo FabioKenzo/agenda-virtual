@@ -20,6 +20,7 @@ import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import java.net.MalformedURLException;
 import br.com.kenzowebstudio.agenda_virtual.exception.ResourceNotFoundException;
+import java.nio.file.LinkOption;
 
 @Service
 public class MediaStorageService {
@@ -237,12 +238,15 @@ public class MediaStorageService {
         }
 
         try {
-            if (Files.isSymbolicLink(filePath)) {
+            if (Files.isSymbolicLink(storageLocation)
+                    || Files.isSymbolicLink(filePath)) {
                 throw new IllegalStateException(
                         "O arquivo de mídia não está disponível.");
             }
 
-            if (!Files.isRegularFile(filePath)) {
+            if (!Files.isRegularFile(
+                    filePath,
+                    LinkOption.NOFOLLOW_LINKS)) {
                 throw new ResourceNotFoundException(
                         "Arquivo de mídia não encontrado.");
             }
@@ -260,6 +264,6 @@ public class MediaStorageService {
             throw new IllegalStateException(
                     "Não foi possível localizar o arquivo de mídia.", e);
         }
-    }
 
+    }
 }
