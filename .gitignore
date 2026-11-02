@@ -47,3 +47,6 @@ build/
 ### OS ###
 .DS_Store
 Thumbs.db
+
+# Arquivos enviados pelos administradores
+/uploads/

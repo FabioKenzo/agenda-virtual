@@ -65,6 +65,10 @@ public class Event {
     @Column(name = "banner_url", length = 500)
     private String bannerUrl;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "banner_media_id")
+    private Media bannerMedia;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     private EventStatus status;
