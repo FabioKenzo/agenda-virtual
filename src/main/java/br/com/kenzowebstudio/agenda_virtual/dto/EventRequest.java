@@ -29,6 +29,8 @@ public record EventRequest(
 
         @Size(max = 500, message = "A URL do banner deve ter no máximo 500 caracteres") String bannerUrl,
 
+        Long bannerMediaId,
+
         @NotNull(message = "O status é obrigatório") EventStatus status,
 
         Set<Long> studentIds) {

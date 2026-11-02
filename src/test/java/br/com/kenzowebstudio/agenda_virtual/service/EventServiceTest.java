@@ -6,20 +6,17 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
 import java.util.Set;
-
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
 import br.com.kenzowebstudio.agenda_virtual.dto.EventRequest;
 import br.com.kenzowebstudio.agenda_virtual.dto.EventResponse;
 import br.com.kenzowebstudio.agenda_virtual.exception.ResourceNotFoundException;
@@ -30,6 +27,8 @@ import br.com.kenzowebstudio.agenda_virtual.model.User;
 import br.com.kenzowebstudio.agenda_virtual.repository.EventRepository;
 import br.com.kenzowebstudio.agenda_virtual.repository.StudentRepository;
 import java.util.Optional;
+import br.com.kenzowebstudio.agenda_virtual.repository.MediaRepository;
+
 
 @ExtendWith(MockitoExtension.class)
 class EventServiceTest {
@@ -42,6 +41,9 @@ class EventServiceTest {
 
         @InjectMocks
         private EventService eventService;
+
+        @Mock
+        private MediaRepository mediaRepository;
 
         @Test
         void deveCriarEventoComSucesso() {
@@ -69,6 +71,7 @@ class EventServiceTest {
                                 "Levar garrafa de água",
                                 "https://wa.me/exemplo",
                                 "https://exemplo.com/banner.jpg",
+                                null, // bannerMediaId
                                 EventStatus.AGENDADO,
                                 Set.of(1L));
 
@@ -122,6 +125,7 @@ class EventServiceTest {
                                 "Levar garrafa de água",
                                 "https://wa.me/exemplo",
                                 "https://exemplo.com/banner.jpg",
+                                null, // bannerMediaId
                                 EventStatus.AGENDADO,
                                 Set.of(999L));
 
@@ -189,6 +193,7 @@ class EventServiceTest {
                                 "Nova observação",
                                 "https://wa.me/novo",
                                 "https://exemplo.com/novo-banner.jpg",
+                                null, // bannerMediaId
                                 EventStatus.AGENDADO,
                                 Set.of(2L));
 
@@ -227,6 +232,7 @@ class EventServiceTest {
         void deveLancarExcecaoAoAtualizarEventoInexistente() {
 
                 // Arrange
+
                 EventRequest request = new EventRequest(
                                 "Evento Atualizado",
                                 "Descrição atualizada",
@@ -237,6 +243,7 @@ class EventServiceTest {
                                 "Nova observação",
                                 "https://wa.me/novo",
                                 "https://exemplo.com/novo-banner.jpg",
+                                null, // bannerMediaId
                                 EventStatus.AGENDADO,
                                 Set.of(1L));
 
@@ -346,6 +353,7 @@ class EventServiceTest {
                                 null,
                                 null,
                                 null,
+                                null, // bannerMediaId
                                 EventStatus.AGENDADO,
                                 Set.of());
 
