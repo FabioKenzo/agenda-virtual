@@ -21,6 +21,7 @@ import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.web.bind.annotation.PathVariable;
 import br.com.kenzowebstudio.agenda_virtual.dto.MediaFileResponse;
+import org.springframework.web.bind.annotation.DeleteMapping;
 
 @RestController
 @RequestMapping("/admin/media")
@@ -71,4 +72,14 @@ public class MediaController {
                         "nosniff")
                 .body(file.resource());
     }
+
+    @DeleteMapping("/{id}")
+    @Operation(summary = "Excluir imagem", description = "Exclui uma imagem da biblioteca de mídia, desde que não esteja vinculada a nenhum evento")
+    public ResponseEntity<Void> delete(@PathVariable Long id) {
+
+        mediaService.delete(id);
+
+        return ResponseEntity.noContent().build();
+    }
+
 }

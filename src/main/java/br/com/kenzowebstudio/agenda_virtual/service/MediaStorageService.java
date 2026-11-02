@@ -116,7 +116,21 @@ public class MediaStorageService {
         }
 
         try {
-            Files.deleteIfExists(destination);
+            if (Files.isSymbolicLink(storageLocation)
+                    || Files.isSymbolicLink(destination)) {
+                throw new IllegalStateException(
+                        "O arquivo de mídia não está disponível.");
+            }
+
+            if (!Files.isRegularFile(
+                    destination,
+                    LinkOption.NOFOLLOW_LINKS)) {
+                throw new ResourceNotFoundException(
+                        "Arquivo de mídia não encontrado.");
+            }
+
+            Files.delete(destination);
+
         } catch (IOException e) {
             throw new IllegalStateException(
                     "Não foi possível excluir a imagem.", e);
