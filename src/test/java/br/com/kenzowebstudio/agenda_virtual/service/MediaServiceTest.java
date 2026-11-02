@@ -2,6 +2,7 @@ package br.com.kenzowebstudio.agenda_virtual.service;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -18,12 +19,19 @@ import java.util.Optional;
 import org.springframework.core.io.ByteArrayResource;
 import br.com.kenzowebstudio.agenda_virtual.dto.MediaFileResponse;
 import br.com.kenzowebstudio.agenda_virtual.exception.ResourceNotFoundException;
+import br.com.kenzowebstudio.agenda_virtual.repository.EventRepository;
+import br.com.kenzowebstudio.agenda_virtual.exception.ResourceConflictException;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 @ExtendWith(MockitoExtension.class)
 class MediaServiceTest {
 
         @Mock
         private MediaRepository mediaRepository;
+
+        @Mock
+        private EventRepository eventRepository;
 
         @Mock
         private MediaStorageService mediaStorageService;
@@ -159,6 +167,136 @@ class MediaServiceTest {
 
                 verify(mediaRepository).findById(999L);
                 verifyNoInteractions(mediaStorageService);
+        }
+
+        @Test
+        void deveBloquearExclusaoDeImagemUtilizadaEmEvento() {
+
+                Media media = Media.builder()
+                                .id(10L)
+                                .storedFilename("imagem-teste.png")
+                                .build();
+
+                when(mediaRepository.findById(10L))
+                                .thenReturn(Optional.of(media));
+
+                when(eventRepository.existsByBannerMediaId(10L))
+                                .thenReturn(true);
+
+                ResourceConflictException exception = assertThrows(
+                                ResourceConflictException.class,
+                                () -> mediaService.delete(10L));
+
+                assertEquals(
+                                "Esta imagem está sendo utilizada como banner de um evento e não pode ser excluída.",
+                                exception.getMessage());
+
+                verify(mediaRepository).findById(10L);
+                verify(eventRepository).existsByBannerMediaId(10L);
+
+                verify(mediaStorageService, never())
+                                .delete(any());
+
+                verify(mediaRepository, never())
+                                .delete(any(Media.class));
+        }
+
+        @Test
+        void deveImpedirExclusaoDeImagemInexistente() {
+
+                when(mediaRepository.findById(999L))
+                                .thenReturn(Optional.empty());
+
+                ResourceNotFoundException exception = assertThrows(
+                                ResourceNotFoundException.class,
+                                () -> mediaService.delete(999L));
+
+                assertEquals(
+                                "Imagem não encontrada.",
+                                exception.getMessage());
+
+                verify(mediaRepository).findById(999L);
+
+                verifyNoInteractions(
+                                eventRepository,
+                                mediaStorageService);
+        }
+
+        @Test
+        void deveExcluirArquivoSomenteAposCommit() {
+
+                Media media = Media.builder()
+                                .id(10L)
+                                .storedFilename("imagem-teste.png")
+                                .build();
+
+                when(mediaRepository.findById(10L))
+                                .thenReturn(Optional.of(media));
+
+                when(eventRepository.existsByBannerMediaId(10L))
+                                .thenReturn(false);
+
+                TransactionSynchronizationManager.initSynchronization();
+
+                try {
+                        mediaService.delete(10L);
+
+                        verify(mediaRepository).delete(media);
+                        verify(mediaRepository).flush();
+
+                        verify(mediaStorageService, never())
+                                        .delete(anyString());
+
+                        var synchronizations = TransactionSynchronizationManager.getSynchronizations();
+
+                        assertEquals(1, synchronizations.size());
+
+                        TransactionSynchronization synchronization = synchronizations.get(0);
+
+                        synchronization.afterCommit();
+
+                        verify(mediaStorageService)
+                                        .delete("imagem-teste.png");
+
+                } finally {
+                        TransactionSynchronizationManager.clearSynchronization();
+                }
+        }
+
+        @Test
+        void naoDeveExcluirArquivoQuandoTransacaoSofrerRollback() {
+
+                Media media = Media.builder()
+                                .id(10L)
+                                .storedFilename("imagem-teste.png")
+                                .build();
+
+                when(mediaRepository.findById(10L))
+                                .thenReturn(Optional.of(media));
+
+                TransactionSynchronizationManager.initSynchronization();
+
+                try {
+                        mediaService.delete(10L);
+
+                        var synchronizations = TransactionSynchronizationManager.getSynchronizations();
+
+                        assertEquals(1, synchronizations.size());
+
+                        TransactionSynchronization synchronization = synchronizations.get(0);
+
+                        synchronization.afterCompletion(
+                                        TransactionSynchronization.STATUS_ROLLED_BACK);
+
+                        verify(mediaRepository).delete(media);
+                        verify(mediaRepository).flush();
+
+                        verify(mediaStorageService, never())
+                                        .delete(anyString());
+
+                } finally {
+                        TransactionSynchronizationManager.clearSynchronization();
+                }
         }
 
 }

@@ -22,6 +22,7 @@ import org.springframework.context.annotation.Import;
 import br.com.kenzowebstudio.agenda_virtual.config.SecurityConfig;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -49,6 +50,10 @@ import org.springframework.core.io.ByteArrayResource;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import br.com.kenzowebstudio.agenda_virtual.exception.ResourceNotFoundException;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import br.com.kenzowebstudio.agenda_virtual.exception.ResourceConflictException;
+import java.sql.SQLException;
+import org.springframework.dao.DataIntegrityViolationException;
 
 @WebMvcTest(controllers = {
                 ResponsibleController.class,
@@ -460,6 +465,98 @@ class SecurityIntegrationTest {
                                                 "Imagem não encontrada."));
 
                 verify(mediaService).loadFile(999L);
+        }
+
+        @Test
+        @WithMockUser(roles = "ADMIN")
+        void devePermitirExclusaoDeImagemParaAdmin() throws Exception {
+
+                mockMvc.perform(
+                                delete("/admin/media/10")
+                                                .with(csrf()))
+                                .andExpect(status().isNoContent());
+
+                verify(mediaService).delete(10L);
+        }
+
+        @Test
+        @WithMockUser(roles = "RESPONSAVEL")
+        void deveBloquearExclusaoDeImagemParaResponsavel() throws Exception {
+
+                mockMvc.perform(
+                                delete("/admin/media/10")
+                                                .with(csrf()))
+                                .andExpect(status().isForbidden());
+
+                verify(mediaService, never()).delete(10L);
+        }
+
+        @Test
+        @WithMockUser(roles = "ADMIN")
+        void deveBloquearExclusaoDeImagemSemCsrf() throws Exception {
+
+                mockMvc.perform(
+                                delete("/admin/media/10"))
+                                .andExpect(status().isForbidden());
+
+                verify(mediaService, never()).delete(10L);
+        }
+
+        @Test
+        void deveBloquearExclusaoDeImagemSemAutenticacao() throws Exception {
+
+                mockMvc.perform(
+                                delete("/admin/media/10")
+                                                .with(csrf()))
+                                .andExpect(status().isUnauthorized());
+
+                verify(mediaService, never()).delete(10L);
+        }
+
+        @Test
+        @WithMockUser(roles = "ADMIN")
+        void deveRetornar409AoExcluirImagemVinculadaAEvento() throws Exception {
+
+                doThrow(new ResourceConflictException(
+                                "Esta imagem está sendo utilizada como banner de um evento e não pode ser excluída."))
+                                .when(mediaService).delete(10L);
+
+                mockMvc.perform(
+                                delete("/admin/media/10")
+                                                .with(csrf()))
+                                .andExpect(status().isConflict())
+                                .andExpect(jsonPath("$.status").value(409))
+                                .andExpect(jsonPath("$.message").value(
+                                                "Esta imagem está sendo utilizada como banner de um evento e não pode ser excluída."));
+
+                verify(mediaService).delete(10L);
+        }
+
+        @Test
+        @WithMockUser(roles = "ADMIN")
+        void deveRetornar409QuandoBancoImpedirExclusaoPorChaveEstrangeira()
+                        throws Exception {
+
+                SQLException sqlException = new SQLException(
+                                "Violação de chave estrangeira",
+                                "23503");
+
+                DataIntegrityViolationException exception = new DataIntegrityViolationException(
+                                "Erro de integridade no banco",
+                                sqlException);
+
+                doThrow(exception)
+                                .when(mediaService).delete(10L);
+
+                mockMvc.perform(
+                                delete("/admin/media/10")
+                                                .with(csrf()))
+                                .andExpect(status().isConflict())
+                                .andExpect(jsonPath("$.status").value(409))
+                                .andExpect(jsonPath("$.message").value(
+                                                "Não foi possível concluir a operação porque o registro está sendo utilizado por outro recurso."));
+
+                verify(mediaService).delete(10L);
         }
 
 }
