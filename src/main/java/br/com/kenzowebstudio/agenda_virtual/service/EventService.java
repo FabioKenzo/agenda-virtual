@@ -4,9 +4,7 @@ import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-
 import org.springframework.stereotype.Service;
-
 import br.com.kenzowebstudio.agenda_virtual.dto.EventRequest;
 import br.com.kenzowebstudio.agenda_virtual.dto.EventResponse;
 import br.com.kenzowebstudio.agenda_virtual.dto.StudentResponse;
@@ -16,6 +14,8 @@ import br.com.kenzowebstudio.agenda_virtual.model.Student;
 import br.com.kenzowebstudio.agenda_virtual.model.User;
 import br.com.kenzowebstudio.agenda_virtual.repository.EventRepository;
 import br.com.kenzowebstudio.agenda_virtual.repository.StudentRepository;
+import br.com.kenzowebstudio.agenda_virtual.repository.MediaRepository;
+import br.com.kenzowebstudio.agenda_virtual.model.Media;
 
 @Service
 public class EventService {
@@ -24,18 +24,27 @@ public class EventService {
 
     private final StudentRepository studentRepository;
 
+    private final MediaRepository mediaRepository;
+
     public EventService(
             EventRepository eventRepository,
-            StudentRepository studentRepository) {
+            StudentRepository studentRepository,
+            MediaRepository mediaRepository) {
+
         this.eventRepository = eventRepository;
         this.studentRepository = studentRepository;
+        this.mediaRepository = mediaRepository;
     }
 
     public EventResponse create(EventRequest request, User user) {
 
         validateEventTimes(request);
+        validateEventBanner(request);
         LocalDateTime now = LocalDateTime.now();
+
         Set<Student> students = findStudentsByIds(request.studentIds());
+
+        Media bannerMedia = findBannerMediaById(request.bannerMediaId());
 
         Event event = Event.builder()
                 .titulo(request.titulo())
@@ -47,6 +56,7 @@ public class EventService {
                 .observacoes(request.observacoes())
                 .whatsappUrl(request.whatsappUrl())
                 .bannerUrl(request.bannerUrl())
+                .bannerMedia(bannerMedia)
                 .status(request.status())
                 .createdBy(user)
                 .createdAt(now)
@@ -62,10 +72,14 @@ public class EventService {
     public EventResponse update(Long id, EventRequest request) {
 
         validateEventTimes(request);
+        validateEventBanner(request);
+
         Event event = eventRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Evento não encontrado!"));
 
         Set<Student> students = findStudentsByIds(request.studentIds());
+
+        Media bannerMedia = findBannerMediaById(request.bannerMediaId());
 
         event.setTitulo(request.titulo());
         event.setDescricao(request.descricao());
@@ -76,6 +90,7 @@ public class EventService {
         event.setObservacoes(request.observacoes());
         event.setWhatsappUrl(request.whatsappUrl());
         event.setBannerUrl(request.bannerUrl());
+        event.setBannerMedia(bannerMedia);
         event.setStatus(request.status());
         event.setStudents(students);
         event.setUpdatedAt(LocalDateTime.now());
@@ -107,10 +122,9 @@ public class EventService {
                 event.getObservacoes(),
                 event.getWhatsappUrl(),
                 event.getBannerUrl(),
+                event.getBannerMedia() != null ? event.getBannerMedia().getId(): null,
                 event.getStatus(),
-                event.getCreatedBy() != null
-                        ? event.getCreatedBy().getId()
-                        : null,
+                event.getCreatedBy() != null ? event.getCreatedBy().getId(): null,
                 event.getCreatedAt(),
                 event.getUpdatedAt(),
                 students);
@@ -164,6 +178,26 @@ public class EventService {
 
             throw new IllegalArgumentException(
                     "A hora de término deve ser posterior à hora de início");
+        }
+    }
+
+    private Media findBannerMediaById(Long bannerMediaId) {
+        if (bannerMediaId == null) {
+            return null;
+        }
+
+        return mediaRepository.findById(bannerMediaId)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Imagem do banner não encontrada!"));
+    }
+
+    private void validateEventBanner(EventRequest request) {
+        if (request.bannerUrl() != null
+                && !request.bannerUrl().isBlank()
+                && request.bannerMediaId() != null) {
+
+            throw new IllegalArgumentException(
+                    "Informe apenas uma URL de banner ou uma imagem da biblioteca.");
         }
     }
 
