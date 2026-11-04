@@ -141,6 +141,7 @@ class SecurityIntegrationTest {
                                 "Chegar com 10 minutos de antecedência",
                                 "https://wa.me/exemplo",
                                 "https://exemplo.com/banner.jpg",
+                                null, // bannerMediaId
                                 EventStatus.AGENDADO,
                                 1L,
                                 LocalDateTime.now(),

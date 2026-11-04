@@ -28,7 +28,7 @@ import br.com.kenzowebstudio.agenda_virtual.repository.EventRepository;
 import br.com.kenzowebstudio.agenda_virtual.repository.StudentRepository;
 import java.util.Optional;
 import br.com.kenzowebstudio.agenda_virtual.repository.MediaRepository;
-
+import br.com.kenzowebstudio.agenda_virtual.model.Media;
 
 @ExtendWith(MockitoExtension.class)
 class EventServiceTest {
@@ -369,6 +369,191 @@ class EventServiceTest {
 
                 verify(eventRepository, never()).save(any(Event.class));
                 verify(studentRepository, never()).findAllById(any());
+        }
+
+        @Test
+        void deveLancarExcecaoAoInformarDoisTiposDeBanner() {
+                // Arrange
+                User admin = User.builder()
+                                .id(10L)
+                                .nome("Administrador")
+                                .build();
+
+                EventRequest request = new EventRequest(
+                                "Festa da Escola",
+                                "Evento comemorativo",
+                                LocalDate.of(2026, 11, 20),
+                                LocalTime.of(14, 0),
+                                LocalTime.of(17, 0),
+                                "Pátio da escola",
+                                null,
+                                null,
+                                "https://exemplo.com/banner.jpg",
+                                1L,
+                                EventStatus.AGENDADO,
+                                Set.of());
+
+                // Act
+                IllegalArgumentException exception = assertThrows(
+                                IllegalArgumentException.class,
+                                () -> eventService.create(request, admin));
+
+                // Assert
+                assertEquals(
+                                "Informe apenas uma URL de banner ou uma imagem da biblioteca.",
+                                exception.getMessage());
+
+                verify(mediaRepository, never()).findById(any());
+                verify(eventRepository, never()).save(any(Event.class));
+        }
+
+        @Test
+        void deveCriarEventoComImagemDaBiblioteca() {
+                // Arrange
+                User admin = User.builder()
+                                .id(10L)
+                                .nome("Administrador")
+                                .build();
+
+                Media imagem = new Media();
+                imagem.setId(1L);
+
+                EventRequest request = new EventRequest(
+                                "Festa da Escola",
+                                "Evento comemorativo",
+                                LocalDate.of(2026, 11, 20),
+                                LocalTime.of(14, 0),
+                                LocalTime.of(17, 0),
+                                "Pátio da escola",
+                                null,
+                                null,
+                                null,
+                                1L,
+                                EventStatus.AGENDADO,
+                                Set.of());
+
+                when(mediaRepository.findById(1L))
+                                .thenReturn(Optional.of(imagem));
+
+                when(eventRepository.save(any(Event.class)))
+                                .thenAnswer(invocation -> invocation.getArgument(0));
+
+
+                // Act
+                EventResponse response = eventService.create(request, admin);
+
+                // Assert
+                assertEquals(1L, response.bannerMediaId());
+
+                // Assert
+                ArgumentCaptor<Event> eventCaptor = ArgumentCaptor.forClass(Event.class);
+
+                verify(eventRepository).save(eventCaptor.capture());
+
+                Event eventoSalvo = eventCaptor.getValue();
+
+                assertEquals(imagem, eventoSalvo.getBannerMedia());
+                assertEquals(null, eventoSalvo.getBannerUrl());
+
+                verify(mediaRepository).findById(1L);
+        }
+
+        @Test
+        void deveLancarExcecaoAoCriarEventoComImagemInexistente() {
+                // Arrange
+                User admin = User.builder()
+                                .id(10L)
+                                .nome("Administrador")
+                                .build();
+
+                EventRequest request = new EventRequest(
+                                "Festa da Escola",
+                                "Evento comemorativo",
+                                LocalDate.of(2026, 11, 20),
+                                LocalTime.of(14, 0),
+                                LocalTime.of(17, 0),
+                                "Pátio da escola",
+                                null,
+                                null,
+                                null,
+                                999L,
+                                EventStatus.AGENDADO,
+                                Set.of());
+
+                when(mediaRepository.findById(999L))
+                                .thenReturn(Optional.empty());
+
+                // Act
+                ResourceNotFoundException exception = assertThrows(
+                                ResourceNotFoundException.class,
+                                () -> eventService.create(request, admin));
+
+                // Assert
+                assertEquals(
+                                "Imagem do banner não encontrada!",
+                                exception.getMessage());
+
+                verify(mediaRepository).findById(999L);
+                verify(eventRepository, never()).save(any(Event.class));
+        }
+
+        @Test
+        void deveAtualizarImagemDoEventoComSucesso() {
+                // Arrange
+                User admin = User.builder()
+                                .id(10L)
+                                .nome("Administrador")
+                                .build();
+
+                Media imagemAntiga = new Media();
+                imagemAntiga.setId(1L);
+
+                Media imagemNova = new Media();
+                imagemNova.setId(2L);
+
+                Event eventoExistente = Event.builder()
+                                .id(100L)
+                                .titulo("Evento Antigo")
+                                .descricao("Descrição antiga")
+                                .data(LocalDate.of(2026, 10, 20))
+                                .status(EventStatus.AGENDADO)
+                                .bannerMedia(imagemAntiga)
+                                .createdBy(admin)
+                                .students(Set.of())
+                                .build();
+
+                EventRequest request = new EventRequest(
+                                "Evento Atualizado",
+                                "Descrição atualizada",
+                                LocalDate.of(2026, 11, 20),
+                                LocalTime.of(14, 0),
+                                LocalTime.of(17, 0),
+                                "Pátio da escola",
+                                null,
+                                null,
+                                null,
+                                2L,
+                                EventStatus.AGENDADO,
+                                Set.of());
+
+                when(eventRepository.findById(100L))
+                                .thenReturn(Optional.of(eventoExistente));
+
+                when(mediaRepository.findById(2L))
+                                .thenReturn(Optional.of(imagemNova));
+
+                when(eventRepository.save(any(Event.class)))
+                                .thenAnswer(invocation -> invocation.getArgument(0));
+
+                // Act
+                eventService.update(100L, request);
+
+                // Assert
+                assertEquals(imagemNova, eventoExistente.getBannerMedia());
+                assertEquals(null, eventoExistente.getBannerUrl());
+
+                verify(mediaRepository).findById(2L);
+                verify(eventRepository).save(eventoExistente);
         }
 
 }
