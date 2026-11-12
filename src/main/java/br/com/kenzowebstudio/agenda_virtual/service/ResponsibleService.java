@@ -13,6 +13,9 @@ import br.com.kenzowebstudio.agenda_virtual.model.User;
 import br.com.kenzowebstudio.agenda_virtual.repository.AnnouncementRepository;
 import br.com.kenzowebstudio.agenda_virtual.repository.EventRepository;
 import br.com.kenzowebstudio.agenda_virtual.repository.StudentRepository;
+import br.com.kenzowebstudio.agenda_virtual.dto.MediaFileResponse;
+import org.springframework.transaction.annotation.Transactional;
+import br.com.kenzowebstudio.agenda_virtual.model.Event;
 
 @Service
 public class ResponsibleService {
@@ -20,15 +23,18 @@ public class ResponsibleService {
         private final StudentRepository studentRepository;
         private final EventRepository eventRepository;
         private final AnnouncementRepository announcementRepository;
+        private final MediaService mediaService;
 
         public ResponsibleService(
                         StudentRepository studentRepository,
                         EventRepository eventRepository,
-                        AnnouncementRepository announcementRepository) {
+                        AnnouncementRepository announcementRepository,
+                        MediaService mediaService) {
 
                 this.studentRepository = studentRepository;
                 this.eventRepository = eventRepository;
                 this.announcementRepository = announcementRepository;
+                this.mediaService = mediaService;
         }
 
         public List<ResponsibleStudentResponse> findStudents(User user) {
@@ -43,6 +49,7 @@ public class ResponsibleService {
                                 .toList();
         }
 
+        @Transactional(readOnly = true)
         public List<ResponsibleEventResponse> findEvents(User user) {
 
                 return eventRepository.findDistinctByStudentsUserIdOrderByDataAsc(user.getId())
@@ -57,11 +64,12 @@ public class ResponsibleService {
                                                 event.getLocal(),
                                                 event.getObservacoes(),
                                                 event.getWhatsappUrl(),
-                                                event.getBannerUrl(),
+                                                resolveBannerUrl(event),
                                                 event.getStatus()))
                                 .toList();
         }
 
+        @Transactional(readOnly = true)
         public ResponsibleEventResponse findEventById(Long id, User user) {
 
                 var event = eventRepository
@@ -80,7 +88,7 @@ public class ResponsibleService {
                                 event.getLocal(),
                                 event.getObservacoes(),
                                 event.getWhatsappUrl(),
-                                event.getBannerUrl(),
+                                resolveBannerUrl(event),
                                 event.getStatus());
         }
 
@@ -120,6 +128,35 @@ public class ResponsibleService {
                                                 : null,
                                 announcement.getCreatedAt(),
                                 announcement.getUpdatedAt());
+        }
+
+        @Transactional(readOnly = true)
+        public MediaFileResponse findEventBanner(Long eventId, User user) {
+
+                var event = eventRepository
+                                .findDistinctByIdAndStudentsUserId(eventId, user.getId())
+                                .orElseThrow(() -> new ResponseStatusException(
+                                                HttpStatus.NOT_FOUND,
+                                                "Evento não encontrado."));
+
+                if (event.getBannerMedia() == null) {
+                        throw new ResponseStatusException(
+                                        HttpStatus.NOT_FOUND,
+                                        "Este evento não possui uma imagem da biblioteca.");
+                }
+
+                return mediaService.loadFile(event.getBannerMedia().getId());
+        }
+
+        private String resolveBannerUrl(Event event) {
+
+                if (event.getBannerMedia() != null) {
+                        return "http://localhost:8080/responsavel/eventos/"
+                                        + event.getId()
+                                        + "/banner";
+                }
+
+                return event.getBannerUrl();
         }
 
 }
