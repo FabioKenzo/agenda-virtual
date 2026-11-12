@@ -16,6 +16,10 @@ import br.com.kenzowebstudio.agenda_virtual.service.ResponsibleService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.core.io.Resource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import br.com.kenzowebstudio.agenda_virtual.dto.MediaFileResponse;
 
 @RestController
 @RequestMapping("/responsavel")
@@ -53,6 +57,21 @@ public class ResponsibleController {
 
         return ResponseEntity.ok(
                 responsibleService.findEventById(id, user));
+    }
+
+    @GetMapping("/eventos/{id}/banner")
+    @Operation(summary = "Visualizar banner do evento", description = "Retorna o banner de um evento associado aos alunos do responsável autenticado")
+    public ResponseEntity<Resource> findEventBanner(
+            @PathVariable Long id,
+            @AuthenticationPrincipal User user) {
+
+        MediaFileResponse file = responsibleService.findEventBanner(id, user);
+
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(file.contentType()))
+                .header(HttpHeaders.CONTENT_DISPOSITION, "inline")
+                .header("X-Content-Type-Options", "nosniff")
+                .body(file.resource());
     }
 
     @GetMapping("/comunicados")
