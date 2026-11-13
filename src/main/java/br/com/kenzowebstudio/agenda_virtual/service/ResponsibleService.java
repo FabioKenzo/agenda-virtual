@@ -16,6 +16,8 @@ import br.com.kenzowebstudio.agenda_virtual.repository.StudentRepository;
 import br.com.kenzowebstudio.agenda_virtual.dto.MediaFileResponse;
 import org.springframework.transaction.annotation.Transactional;
 import br.com.kenzowebstudio.agenda_virtual.model.Event;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 @Service
 public class ResponsibleService {
@@ -67,6 +69,27 @@ public class ResponsibleService {
                                                 resolveBannerUrl(event),
                                                 event.getStatus()))
                                 .toList();
+        }
+
+        @Transactional(readOnly = true)
+        public Page<ResponsibleEventResponse> findEventsPaginated(
+                        User user,
+                        Pageable pageable) {
+
+                return eventRepository
+                                .findEventsByResponsibleId(user.getId(), pageable)
+                                .map(event -> new ResponsibleEventResponse(
+                                                event.getId(),
+                                                event.getTitulo(),
+                                                event.getDescricao(),
+                                                event.getData(),
+                                                event.getHoraInicio(),
+                                                event.getHoraFim(),
+                                                event.getLocal(),
+                                                event.getObservacoes(),
+                                                event.getWhatsappUrl(),
+                                                resolveBannerUrl(event),
+                                                event.getStatus()));
         }
 
         @Transactional(readOnly = true)

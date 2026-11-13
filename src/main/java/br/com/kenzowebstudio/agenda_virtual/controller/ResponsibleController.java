@@ -7,6 +7,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
 
 import br.com.kenzowebstudio.agenda_virtual.dto.AnnouncementResponse;
 import br.com.kenzowebstudio.agenda_virtual.dto.ResponsibleEventResponse;
@@ -18,8 +19,14 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import br.com.kenzowebstudio.agenda_virtual.dto.MediaFileResponse;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
+import org.springframework.web.bind.annotation.RequestParam;
 
 @RestController
 @RequestMapping("/responsavel")
@@ -47,6 +54,25 @@ public class ResponsibleController {
 
         return ResponseEntity.ok(responsibleService.findEvents(user));
 
+    }
+
+    @GetMapping("/eventos/paginados")
+    @Operation(summary = "Listar eventos paginados dos alunos", description = "Retorna os eventos associados aos alunos do responsável autenticado com paginação")
+    public ResponseEntity<Page<ResponsibleEventResponse>> findEventsPaginated(
+            @AuthenticationPrincipal User user,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "9") int size) {
+
+        if (page < 0 || size < 1 || size > 50) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Parâmetros de paginação inválidos.");
+        }
+
+        Pageable pageable = PageRequest.of(page, size, Sort.unsorted());
+
+        return ResponseEntity.ok(
+                responsibleService.findEventsPaginated(user, pageable));
     }
 
     @GetMapping("/eventos/{id}")
