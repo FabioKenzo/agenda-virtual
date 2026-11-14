@@ -1,14 +1,12 @@
 package br.com.kenzowebstudio.agenda_virtual.controller;
 
 import java.util.List;
-
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
-
 import br.com.kenzowebstudio.agenda_virtual.dto.AnnouncementResponse;
 import br.com.kenzowebstudio.agenda_virtual.dto.ResponsibleEventResponse;
 import br.com.kenzowebstudio.agenda_virtual.dto.ResponsibleStudentResponse;
@@ -106,6 +104,24 @@ public class ResponsibleController {
 
         return ResponseEntity.ok(
                 responsibleService.findAnnouncements());
+    }
+
+    @GetMapping("/comunicados/paginados")
+    @Operation(summary = "Listar comunicados ativos paginados", description = "Retorna os comunicados ativos com paginação, ordenados do mais recente para o mais antigo")
+    public ResponseEntity<Page<AnnouncementResponse>> findAnnouncementsPaginated(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "9") int size) {
+
+        if (page < 0 || size < 1 || size > 50) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Parâmetros de paginação inválidos.");
+        }
+
+        Pageable pageable = PageRequest.of(page, size, Sort.unsorted());
+
+        return ResponseEntity.ok(
+                responsibleService.findAnnouncementsPaginated(pageable));
     }
 
     @GetMapping("/comunicados/{id}")

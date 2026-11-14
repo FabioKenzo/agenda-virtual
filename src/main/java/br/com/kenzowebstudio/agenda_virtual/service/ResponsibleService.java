@@ -133,6 +133,24 @@ public class ResponsibleService {
                                 .toList();
         }
 
+        @Transactional(readOnly = true)
+        public Page<AnnouncementResponse> findAnnouncementsPaginated(
+                        Pageable pageable) {
+
+                return announcementRepository
+                                .findByAtivoTrueOrderByCreatedAtDesc(pageable)
+                                .map(announcement -> new AnnouncementResponse(
+                                                announcement.getId(),
+                                                announcement.getTitulo(),
+                                                announcement.getConteudo(),
+                                                announcement.getAtivo(),
+                                                announcement.getCreatedBy() != null
+                                                                ? announcement.getCreatedBy().getId()
+                                                                : null,
+                                                announcement.getCreatedAt(),
+                                                announcement.getUpdatedAt()));
+        }
+
         public AnnouncementResponse findAnnouncementById(Long id) {
 
                 var announcement = announcementRepository
