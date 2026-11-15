@@ -18,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 import br.com.kenzowebstudio.agenda_virtual.model.Event;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import br.com.kenzowebstudio.agenda_virtual.dto.ResponsibleProfileResponse;
 
 @Service
 public class ResponsibleService {
@@ -37,6 +38,16 @@ public class ResponsibleService {
                 this.eventRepository = eventRepository;
                 this.announcementRepository = announcementRepository;
                 this.mediaService = mediaService;
+        }
+
+        public ResponsibleProfileResponse findProfile(User user) {
+
+                return new ResponsibleProfileResponse(
+                                user.getId(),
+                                user.getNome(),
+                                user.getEmail(),
+                                user.getTelefone(),
+                                user.getRole());
         }
 
         public List<ResponsibleStudentResponse> findStudents(User user) {
