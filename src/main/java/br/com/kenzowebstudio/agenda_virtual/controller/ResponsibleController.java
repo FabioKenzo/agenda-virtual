@@ -25,6 +25,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.web.bind.annotation.RequestParam;
+import br.com.kenzowebstudio.agenda_virtual.dto.ResponsibleProfileResponse;
 
 @RestController
 @RequestMapping("/responsavel")
@@ -52,6 +53,15 @@ public class ResponsibleController {
 
         return ResponseEntity.ok(responsibleService.findEvents(user));
 
+    }
+
+    @GetMapping("/perfil")
+    @Operation(summary = "Consultar perfil do responsável", description = "Retorna os dados do responsável autenticado")
+    public ResponseEntity<ResponsibleProfileResponse> findProfile(
+            @AuthenticationPrincipal User user) {
+
+        return ResponseEntity.ok(
+                responsibleService.findProfile(user));
     }
 
     @GetMapping("/eventos/paginados")
