@@ -73,7 +73,9 @@ class EventServiceTest {
                                 "https://exemplo.com/banner.jpg",
                                 null, // bannerMediaId
                                 EventStatus.AGENDADO,
-                                Set.of(1L));
+                                Set.of(1L), // studentIds
+                                true, // paraTodos
+                                Set.of()); // turmas
 
                 when(studentRepository.findAllById(Set.of(1L)))
                                 .thenReturn(List.of(student));
@@ -104,6 +106,326 @@ class EventServiceTest {
                 assertEquals("Festa da Escola", capturedEvent.getTitulo());
                 assertEquals(admin, capturedEvent.getCreatedBy());
                 assertEquals(1, capturedEvent.getStudents().size());
+
+                assertEquals(true, response.paraTodos());
+                assertEquals(Set.of(), response.turmas());
+                assertEquals(true, capturedEvent.getParaTodos());
+                assertEquals(Set.of(), capturedEvent.getTurmas());
+        }
+
+        @Test
+        void deveCriarEventoParaTodosMesmoComTurmasInformadas() {
+
+                // Arrange
+                User admin = User.builder()
+                                .id(10L)
+                                .nome("Administrador")
+                                .build();
+
+                EventRequest request = new EventRequest(
+                                "Festa da Escola",
+                                "Evento para todos os responsáveis",
+                                LocalDate.of(2026, 11, 20),
+                                LocalTime.of(14, 0),
+                                LocalTime.of(17, 0),
+                                "Pátio da escola",
+                                null,
+                                null,
+                                null,
+                                null, // bannerMediaId
+                                EventStatus.AGENDADO,
+                                Set.of(), // studentIds
+                                true, // paraTodos
+                                Set.of("G1", "G2") // turmas
+                );
+
+                when(eventRepository.save(any(Event.class)))
+                                .thenAnswer(invocation -> {
+                                        Event event = invocation.getArgument(0);
+                                        event.setId(100L);
+                                        return event;
+                                });
+
+                // Act
+                EventResponse response = eventService.create(request, admin);
+
+                // Assert
+                assertEquals(100L, response.id());
+                assertEquals(true, response.paraTodos());
+                assertEquals(Set.of(), response.turmas());
+
+                ArgumentCaptor<Event> eventCaptor = ArgumentCaptor.forClass(Event.class);
+
+                verify(eventRepository).save(eventCaptor.capture());
+
+                Event capturedEvent = eventCaptor.getValue();
+
+                assertEquals(true, capturedEvent.getParaTodos());
+                assertEquals(Set.of(), capturedEvent.getTurmas());
+
+                verify(studentRepository, never()).findDistinctTurmas();
+        }
+
+        @Test
+        void deveCriarEventoParaTurmasEspecificasComSucesso() {
+
+                // Arrange
+                User admin = User.builder()
+                                .id(10L)
+                                .nome("Administrador")
+                                .build();
+
+                EventRequest request = new EventRequest(
+                                "Reunião G1 e G2",
+                                "Reunião exclusiva para responsáveis do G1 e G2",
+                                LocalDate.of(2026, 11, 25),
+                                LocalTime.of(14, 0),
+                                LocalTime.of(16, 0),
+                                "Sala de reuniões",
+                                null,
+                                null,
+                                null,
+                                null, // bannerMediaId
+                                EventStatus.AGENDADO,
+                                Set.of(), // studentIds
+                                false, // paraTodos
+                                Set.of("G1", "G2") // turmas
+                );
+
+                when(studentRepository.findDistinctTurmas())
+                                .thenReturn(Set.of("G1", "G2", "G3", "G4", "G5"));
+
+                when(eventRepository.save(any(Event.class)))
+                                .thenAnswer(invocation -> {
+                                        Event event = invocation.getArgument(0);
+                                        event.setId(101L);
+                                        return event;
+                                });
+
+                // Act
+                EventResponse response = eventService.create(request, admin);
+
+                // Assert
+                assertEquals(101L, response.id());
+                assertEquals(false, response.paraTodos());
+                assertEquals(Set.of("G1", "G2"), response.turmas());
+
+                ArgumentCaptor<Event> eventCaptor = ArgumentCaptor.forClass(Event.class);
+
+                verify(eventRepository).save(eventCaptor.capture());
+
+                Event capturedEvent = eventCaptor.getValue();
+
+                assertEquals(false, capturedEvent.getParaTodos());
+                assertEquals(Set.of("G1", "G2"), capturedEvent.getTurmas());
+
+                verify(studentRepository).findDistinctTurmas();
+        }
+
+        @Test
+        void deveLancarExcecaoAoCriarEventoSemTurmasEspecificas() {
+
+                // Arrange
+                User admin = User.builder()
+                                .id(10L)
+                                .nome("Administrador")
+                                .build();
+
+                EventRequest request = new EventRequest(
+                                "Reunião de Responsáveis",
+                                "Evento exclusivo para turmas selecionadas",
+                                LocalDate.of(2026, 11, 25),
+                                LocalTime.of(14, 0),
+                                LocalTime.of(16, 0),
+                                "Sala de reuniões",
+                                null,
+                                null,
+                                null,
+                                null, // bannerMediaId
+                                EventStatus.AGENDADO,
+                                Set.of(), // studentIds
+                                false, // paraTodos
+                                Set.of() // nenhuma turma selecionada
+                );
+
+                // Act & Assert
+                assertThrows(
+                                IllegalArgumentException.class,
+                                () -> eventService.create(request, admin));
+
+                verify(eventRepository, never()).save(any(Event.class));
+                verify(studentRepository, never()).findDistinctTurmas();
+        }
+
+        @Test
+        void deveLancarExcecaoAoCriarEventoComTurmaInexistente() {
+
+                // Arrange
+                User admin = User.builder()
+                                .id(10L)
+                                .nome("Administrador")
+                                .build();
+
+                EventRequest request = new EventRequest(
+                                "Reunião G9",
+                                "Evento para uma turma inexistente",
+                                LocalDate.of(2026, 11, 25),
+                                LocalTime.of(14, 0),
+                                LocalTime.of(16, 0),
+                                "Sala de reuniões",
+                                null,
+                                null,
+                                null,
+                                null, // bannerMediaId
+                                EventStatus.AGENDADO,
+                                Set.of(), // studentIds
+                                false, // paraTodos
+                                Set.of("G9") // turma inexistente
+                );
+
+                when(studentRepository.findDistinctTurmas())
+                                .thenReturn(Set.of("G1", "G2", "G3", "G4", "G5"));
+
+                // Act & Assert
+                assertThrows(
+                                IllegalArgumentException.class,
+                                () -> eventService.create(request, admin));
+
+                verify(studentRepository).findDistinctTurmas();
+
+                verify(eventRepository, never())
+                                .save(any(Event.class));
+        }
+
+        @Test
+        void deveAtualizarEventoDeTodosParaTurmasEspecificas() {
+
+                // Arrange
+                User admin = User.builder()
+                                .id(10L)
+                                .nome("Administrador")
+                                .build();
+
+                Event eventoExistente = Event.builder()
+                                .id(100L)
+                                .titulo("Evento para Todos")
+                                .descricao("Evento aberto a todos")
+                                .data(LocalDate.of(2026, 11, 20))
+                                .horaInicio(LocalTime.of(14, 0))
+                                .horaFim(LocalTime.of(16, 0))
+                                .local("Pátio da escola")
+                                .status(EventStatus.AGENDADO)
+                                .createdBy(admin)
+                                .createdAt(LocalDateTime.now())
+                                .updatedAt(LocalDateTime.now())
+                                .students(Set.of())
+                                .paraTodos(true)
+                                .turmas(Set.of())
+                                .build();
+
+                EventRequest request = new EventRequest(
+                                "Reunião G1 e G2",
+                                "Evento exclusivo para G1 e G2",
+                                LocalDate.of(2026, 11, 25),
+                                LocalTime.of(14, 0),
+                                LocalTime.of(16, 0),
+                                "Sala de reuniões",
+                                null,
+                                null,
+                                null,
+                                null, // bannerMediaId
+                                EventStatus.AGENDADO,
+                                Set.of(), // studentIds
+                                false, // paraTodos
+                                Set.of("G1", "G2") // turmas
+                );
+
+                when(studentRepository.findDistinctTurmas())
+                                .thenReturn(Set.of("G1", "G2", "G3", "G4", "G5"));
+
+                when(eventRepository.findById(100L))
+                                .thenReturn(Optional.of(eventoExistente));
+
+                when(eventRepository.save(any(Event.class)))
+                                .thenAnswer(invocation -> invocation.getArgument(0));
+
+                // Act
+                EventResponse response = eventService.update(100L, request);
+
+                // Assert
+                assertEquals(100L, response.id());
+                assertEquals(false, response.paraTodos());
+                assertEquals(Set.of("G1", "G2"), response.turmas());
+
+                assertEquals(false, eventoExistente.getParaTodos());
+                assertEquals(Set.of("G1", "G2"), eventoExistente.getTurmas());
+
+                verify(studentRepository).findDistinctTurmas();
+                verify(eventRepository).save(eventoExistente);
+        }
+
+        @Test
+        void deveAtualizarEventoDeTurmasEspecificasParaTodos() {
+
+                // Arrange
+                User admin = User.builder()
+                                .id(10L)
+                                .nome("Administrador")
+                                .build();
+
+                Event eventoExistente = Event.builder()
+                                .id(100L)
+                                .titulo("Reunião G1 e G2")
+                                .descricao("Evento exclusivo para G1 e G2")
+                                .data(LocalDate.of(2026, 11, 20))
+                                .horaInicio(LocalTime.of(14, 0))
+                                .horaFim(LocalTime.of(16, 0))
+                                .local("Sala de reuniões")
+                                .status(EventStatus.AGENDADO)
+                                .createdBy(admin)
+                                .createdAt(LocalDateTime.now())
+                                .updatedAt(LocalDateTime.now())
+                                .students(Set.of())
+                                .paraTodos(false)
+                                .turmas(Set.of("G1", "G2"))
+                                .build();
+
+                EventRequest request = new EventRequest(
+                                "Reunião Geral",
+                                "Evento aberto a todos os responsáveis",
+                                LocalDate.of(2026, 11, 25),
+                                LocalTime.of(14, 0),
+                                LocalTime.of(16, 0),
+                                "Auditório",
+                                null,
+                                null,
+                                null,
+                                null, // bannerMediaId
+                                EventStatus.AGENDADO,
+                                Set.of(), // studentIds
+                                true, // paraTodos
+                                Set.of("G1", "G2") // turmas antigas enviadas
+                );
+
+                when(eventRepository.findById(100L))
+                                .thenReturn(Optional.of(eventoExistente));
+
+                when(eventRepository.save(any(Event.class)))
+                                .thenAnswer(invocation -> invocation.getArgument(0));
+
+                // Act
+                EventResponse response = eventService.update(100L, request);
+
+                // Assert
+                assertEquals(100L, response.id());
+                assertEquals(true, response.paraTodos());
+                assertEquals(Set.of(), response.turmas());
+
+                assertEquals(true, eventoExistente.getParaTodos());
+                assertEquals(Set.of(), eventoExistente.getTurmas());
+
+                verify(studentRepository, never()).findDistinctTurmas();
+                verify(eventRepository).save(eventoExistente);
         }
 
         @Test
@@ -127,7 +449,9 @@ class EventServiceTest {
                                 "https://exemplo.com/banner.jpg",
                                 null, // bannerMediaId
                                 EventStatus.AGENDADO,
-                                Set.of(999L));
+                                Set.of(999L), // studentIds
+                                true, // paraTodos
+                                Set.of()); // turmas
 
                 when(studentRepository.findAllById(Set.of(999L)))
                                 .thenReturn(List.of());
@@ -195,7 +519,9 @@ class EventServiceTest {
                                 "https://exemplo.com/novo-banner.jpg",
                                 null, // bannerMediaId
                                 EventStatus.AGENDADO,
-                                Set.of(2L));
+                                Set.of(2L), // studentIds - aluno novo
+                                true, // paraTodos
+                                Set.of()); // turmas
 
                 when(eventRepository.findById(100L))
                                 .thenReturn(Optional.of(eventoExistente));
@@ -245,7 +571,9 @@ class EventServiceTest {
                                 "https://exemplo.com/novo-banner.jpg",
                                 null, // bannerMediaId
                                 EventStatus.AGENDADO,
-                                Set.of(1L));
+                                Set.of(1L), // studentIds
+                                true, // paraTodos
+                                Set.of()); // turmas
 
                 when(eventRepository.findById(999L))
                                 .thenReturn(Optional.empty());
@@ -355,7 +683,9 @@ class EventServiceTest {
                                 null,
                                 null, // bannerMediaId
                                 EventStatus.AGENDADO,
-                                Set.of());
+                                Set.of(), // studentIds
+                                true, // paraTodos
+                                Set.of()); // turmas
 
                 // Act
                 IllegalArgumentException exception = assertThrows(
@@ -391,7 +721,9 @@ class EventServiceTest {
                                 "https://exemplo.com/banner.jpg",
                                 1L,
                                 EventStatus.AGENDADO,
-                                Set.of());
+                                Set.of(), // studentIds
+                                true, // paraTodos
+                                Set.of()); // turmas
 
                 // Act
                 IllegalArgumentException exception = assertThrows(
@@ -430,14 +762,15 @@ class EventServiceTest {
                                 null,
                                 1L,
                                 EventStatus.AGENDADO,
-                                Set.of());
+                                Set.of(), // studentIds
+                                true, // paraTodos
+                                Set.of()); // turmas
 
                 when(mediaRepository.findById(1L))
                                 .thenReturn(Optional.of(imagem));
 
                 when(eventRepository.save(any(Event.class)))
                                 .thenAnswer(invocation -> invocation.getArgument(0));
-
 
                 // Act
                 EventResponse response = eventService.create(request, admin);
@@ -478,7 +811,9 @@ class EventServiceTest {
                                 null,
                                 999L,
                                 EventStatus.AGENDADO,
-                                Set.of());
+                                Set.of(), // studentIds
+                                true, // paraTodos
+                                Set.of()); // turmas
 
                 when(mediaRepository.findById(999L))
                                 .thenReturn(Optional.empty());
@@ -534,7 +869,9 @@ class EventServiceTest {
                                 null,
                                 2L,
                                 EventStatus.AGENDADO,
-                                Set.of());
+                                Set.of(), // studentIds
+                                true, // paraTodos
+                                Set.of()); // turmas
 
                 when(eventRepository.findById(100L))
                                 .thenReturn(Optional.of(eventoExistente));

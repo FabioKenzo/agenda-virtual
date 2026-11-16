@@ -14,13 +14,15 @@ public class OpenApiConfig {
     @Bean
     public OpenAPI customOpenAPI() {
 
-        String securitySchemeName = "bearerAuth";
+        String securitySchemeName = "cookieAuth";
 
         return new OpenAPI()
                 .info(new Info()
                         .title("Agenda Virtual Escolar API")
                         .version("1.0")
-                        .description("API REST para gerenciamento da Agenda Virtual Escolar"))
+                        .description(
+                                "API REST para gerenciamento da Agenda Virtual Escolar. "
+                                + "Autenticação via cookie HttpOnly e proteção CSRF."))
                 .addSecurityItem(
                         new SecurityRequirement()
                                 .addList(securitySchemeName))
@@ -28,9 +30,8 @@ public class OpenApiConfig {
                         new Components().addSecuritySchemes(
                                 securitySchemeName,
                                 new SecurityScheme()
-                                        .name(securitySchemeName)
-                                        .type(SecurityScheme.Type.HTTP)
-                                        .scheme("bearer")
-                                        .bearerFormat("JWT")));
+                                        .type(SecurityScheme.Type.APIKEY)
+                                        .in(SecurityScheme.In.COOKIE)
+                                        .name("access_token")));
     }
 }

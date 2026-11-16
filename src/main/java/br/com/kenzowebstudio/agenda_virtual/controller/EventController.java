@@ -53,6 +53,13 @@ public class EventController {
         return ResponseEntity.ok(eventService.findAll());
     }
 
+    @GetMapping("/turmas")
+    @Operation(summary = "Listar turmas disponíveis", description = "Retorna as turmas cadastradas para seleção do público-alvo dos eventos")
+    public ResponseEntity<List<String>> findAvailableTurmas() {
+
+        return ResponseEntity.ok(eventService.findAvailableTurmas());
+    }
+
     @GetMapping("/{id}")
     @Operation(summary = "Buscar eventos por ID", description = "Retorna os detalhes de um aviso especifico")
     public ResponseEntity<EventResponse> findById(@PathVariable Long id) {
@@ -71,7 +78,7 @@ public class EventController {
 
     @DeleteMapping("/{id}")
     @Operation(summary = "Excluir evento", description = "Exclui um evento existente, apenas administradores")
-    public ResponseEntity<Void> delete(@PathVariable Long id){
+    public ResponseEntity<Void> delete(@PathVariable Long id) {
 
         eventService.delete(id);
         return ResponseEntity.noContent().build();

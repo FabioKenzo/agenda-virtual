@@ -5,8 +5,9 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.HashSet;
 import java.util.Set;
-
+import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
+import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -87,4 +88,15 @@ public class Event {
     @JoinTable(name = "event_students", joinColumns = @JoinColumn(name = "event_id"), inverseJoinColumns = @JoinColumn(name = "student_id"))
     @Builder.Default
     private Set<Student> students = new HashSet<>();
+
+    @Column(name = "para_todos", nullable = false)
+    @Builder.Default
+    private Boolean paraTodos = true;
+
+    @ElementCollection
+    @CollectionTable(name = "event_classes", joinColumns = @JoinColumn(name = "event_id"))
+    @Column(name = "turma", nullable = false, length = 50)
+    @Builder.Default
+    private Set<String> turmas = new HashSet<>();
+
 }
