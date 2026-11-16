@@ -121,7 +121,7 @@ class ResponsibleServiceTest {
                                 .build();
 
                 when(eventRepository
-                                .findDistinctByStudentsUserIdOrderByDataAsc(10L))
+                                .findEventsVisibleToResponsible(10L))
                                 .thenReturn(List.of(evento1, evento2));
 
                 // Act
@@ -139,7 +139,7 @@ class ResponsibleServiceTest {
                 assertEquals(LocalDate.of(2026, 11, 20), response.get(1).data());
 
                 verify(eventRepository)
-                                .findDistinctByStudentsUserIdOrderByDataAsc(10L);
+                                .findEventsVisibleToResponsible(10L);
         }
 
         @Test

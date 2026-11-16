@@ -73,7 +73,9 @@ class EventServiceTest {
                                 "https://exemplo.com/banner.jpg",
                                 null, // bannerMediaId
                                 EventStatus.AGENDADO,
-                                Set.of(1L));
+                                Set.of(1L), // studentIds
+                                true, // paraTodos
+                                Set.of()); // turmas
 
                 when(studentRepository.findAllById(Set.of(1L)))
                                 .thenReturn(List.of(student));
@@ -104,6 +106,11 @@ class EventServiceTest {
                 assertEquals("Festa da Escola", capturedEvent.getTitulo());
                 assertEquals(admin, capturedEvent.getCreatedBy());
                 assertEquals(1, capturedEvent.getStudents().size());
+
+                assertEquals(true, response.paraTodos());
+                assertEquals(Set.of(), response.turmas());
+                assertEquals(true, capturedEvent.getParaTodos());
+                assertEquals(Set.of(), capturedEvent.getTurmas());
         }
 
         @Test
@@ -127,7 +134,9 @@ class EventServiceTest {
                                 "https://exemplo.com/banner.jpg",
                                 null, // bannerMediaId
                                 EventStatus.AGENDADO,
-                                Set.of(999L));
+                                Set.of(999L), // studentIds
+                                true, // paraTodos
+                                Set.of()); // turmas
 
                 when(studentRepository.findAllById(Set.of(999L)))
                                 .thenReturn(List.of());
@@ -195,7 +204,9 @@ class EventServiceTest {
                                 "https://exemplo.com/novo-banner.jpg",
                                 null, // bannerMediaId
                                 EventStatus.AGENDADO,
-                                Set.of(2L));
+                                Set.of(2L), // studentIds - aluno novo
+                                true, // paraTodos
+                                Set.of()); // turmas
 
                 when(eventRepository.findById(100L))
                                 .thenReturn(Optional.of(eventoExistente));
@@ -245,7 +256,9 @@ class EventServiceTest {
                                 "https://exemplo.com/novo-banner.jpg",
                                 null, // bannerMediaId
                                 EventStatus.AGENDADO,
-                                Set.of(1L));
+                                Set.of(1L), // studentIds
+                                true, // paraTodos
+                                Set.of()); // turmas
 
                 when(eventRepository.findById(999L))
                                 .thenReturn(Optional.empty());
@@ -355,7 +368,9 @@ class EventServiceTest {
                                 null,
                                 null, // bannerMediaId
                                 EventStatus.AGENDADO,
-                                Set.of());
+                                Set.of(), // studentIds
+                                true, // paraTodos
+                                Set.of()); // turmas
 
                 // Act
                 IllegalArgumentException exception = assertThrows(
@@ -391,7 +406,9 @@ class EventServiceTest {
                                 "https://exemplo.com/banner.jpg",
                                 1L,
                                 EventStatus.AGENDADO,
-                                Set.of());
+                                Set.of(), // studentIds
+                                true, // paraTodos
+                                Set.of()); // turmas
 
                 // Act
                 IllegalArgumentException exception = assertThrows(
@@ -430,14 +447,15 @@ class EventServiceTest {
                                 null,
                                 1L,
                                 EventStatus.AGENDADO,
-                                Set.of());
+                                Set.of(), // studentIds
+                                true, // paraTodos
+                                Set.of()); // turmas
 
                 when(mediaRepository.findById(1L))
                                 .thenReturn(Optional.of(imagem));
 
                 when(eventRepository.save(any(Event.class)))
                                 .thenAnswer(invocation -> invocation.getArgument(0));
-
 
                 // Act
                 EventResponse response = eventService.create(request, admin);
@@ -478,7 +496,9 @@ class EventServiceTest {
                                 null,
                                 999L,
                                 EventStatus.AGENDADO,
-                                Set.of());
+                                Set.of(), // studentIds
+                                true, // paraTodos
+                                Set.of()); // turmas
 
                 when(mediaRepository.findById(999L))
                                 .thenReturn(Optional.empty());
@@ -534,7 +554,9 @@ class EventServiceTest {
                                 null,
                                 2L,
                                 EventStatus.AGENDADO,
-                                Set.of());
+                                Set.of(), // studentIds
+                                true, // paraTodos
+                                Set.of()); // turmas
 
                 when(eventRepository.findById(100L))
                                 .thenReturn(Optional.of(eventoExistente));

@@ -146,7 +146,9 @@ class SecurityIntegrationTest {
                                 1L,
                                 LocalDateTime.now(),
                                 LocalDateTime.now(),
-                                Set.of());
+                                Set.of(), // students
+                                true, // paraTodos
+                                Set.of()); // turmas
 
                 when(eventService.create(
                                 any(EventRequest.class),
@@ -154,17 +156,19 @@ class SecurityIntegrationTest {
 
                 String json = """
                                 {
-                                    "titulo": "Reunião de Pais",
-                                    "descricao": "Reunião com os responsáveis",
-                                    "data": "2026-10-10",
-                                    "horaInicio": "18:00:00",
-                                    "horaFim": "19:00:00",
-                                    "local": "Auditório",
-                                    "observacoes": "Chegar com 10 minutos de antecedência",
-                                    "whatsappUrl": "https://wa.me/exemplo",
-                                    "bannerUrl": "https://exemplo.com/banner.jpg",
-                                    "status": "AGENDADO",
-                                    "studentIds": []
+                                "titulo": "Reunião de Pais",
+                                "descricao": "Reunião com os responsáveis",
+                                "data": "2026-10-10",
+                                "horaInicio": "18:00:00",
+                                "horaFim": "19:00:00",
+                                "local": "Auditório",
+                                "observacoes": "Chegar com 10 minutos de antecedência",
+                                "whatsappUrl": "https://wa.me/exemplo",
+                                "bannerUrl": "https://exemplo.com/banner.jpg",
+                                "status": "AGENDADO",
+                                "studentIds": [],
+                                "paraTodos": true,
+                                "turmas": []
                                 }
                                 """;
 
