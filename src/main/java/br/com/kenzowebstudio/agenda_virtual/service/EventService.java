@@ -16,6 +16,7 @@ import br.com.kenzowebstudio.agenda_virtual.repository.EventRepository;
 import br.com.kenzowebstudio.agenda_virtual.repository.StudentRepository;
 import br.com.kenzowebstudio.agenda_virtual.repository.MediaRepository;
 import br.com.kenzowebstudio.agenda_virtual.model.Media;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class EventService {
@@ -36,10 +37,12 @@ public class EventService {
         this.mediaRepository = mediaRepository;
     }
 
+    @Transactional
     public EventResponse create(EventRequest request, User user) {
 
         validateEventTimes(request);
         validateEventBanner(request);
+        Set<String> turmas = validateAndNormalizeTurmas(request);
         LocalDateTime now = LocalDateTime.now();
 
         Set<Student> students = findStudentsByIds(request.studentIds());
@@ -62,6 +65,8 @@ public class EventService {
                 .createdAt(now)
                 .updatedAt(now)
                 .students(students)
+                .paraTodos(request.paraTodos())
+                .turmas(turmas)
                 .build();
 
         Event savedEvent = eventRepository.save(event);
@@ -69,10 +74,12 @@ public class EventService {
         return toResponse(savedEvent);
     }
 
+    @Transactional
     public EventResponse update(Long id, EventRequest request) {
 
         validateEventTimes(request);
         validateEventBanner(request);
+        Set<String> turmas = validateAndNormalizeTurmas(request);
 
         Event event = eventRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Evento não encontrado!"));
@@ -93,6 +100,8 @@ public class EventService {
         event.setBannerMedia(bannerMedia);
         event.setStatus(request.status());
         event.setStudents(students);
+        event.setParaTodos(request.paraTodos());
+        event.setTurmas(turmas);
         event.setUpdatedAt(LocalDateTime.now());
 
         Event updatedEvent = eventRepository.save(event);
@@ -122,12 +131,23 @@ public class EventService {
                 event.getObservacoes(),
                 event.getWhatsappUrl(),
                 event.getBannerUrl(),
-                event.getBannerMedia() != null ? event.getBannerMedia().getId(): null,
+                event.getBannerMedia() != null ? event.getBannerMedia().getId() : null,
                 event.getStatus(),
-                event.getCreatedBy() != null ? event.getCreatedBy().getId(): null,
+                event.getCreatedBy() != null ? event.getCreatedBy().getId() : null,
                 event.getCreatedAt(),
                 event.getUpdatedAt(),
-                students);
+                students,
+                event.getParaTodos(),
+                event.getTurmas());
+
+    }
+
+    public List<String> findAvailableTurmas() {
+
+        return studentRepository.findDistinctTurmas()
+                .stream()
+                .sorted()
+                .toList();
     }
 
     public List<EventResponse> findAll() {
@@ -199,6 +219,46 @@ public class EventService {
             throw new IllegalArgumentException(
                     "Informe apenas uma URL de banner ou uma imagem da biblioteca.");
         }
+    }
+
+    private Set<String> validateAndNormalizeTurmas(EventRequest request) {
+
+        if (Boolean.TRUE.equals(request.paraTodos())) {
+            return new HashSet<>();
+        }
+
+        if (request.turmas() == null || request.turmas().isEmpty()) {
+            throw new IllegalArgumentException(
+                    "Selecione pelo menos uma turma para o evento direcionado.");
+        }
+
+        Set<String> turmas = new HashSet<>();
+
+        for (String turma : request.turmas()) {
+
+            if (turma == null || turma.isBlank()) {
+                throw new IllegalArgumentException(
+                        "O nome da turma não pode estar vazio.");
+            }
+
+            String turmaNormalizada = turma.trim();
+
+            if (turmaNormalizada.length() > 50) {
+                throw new IllegalArgumentException(
+                        "O nome da turma deve ter no máximo 50 caracteres.");
+            }
+
+            turmas.add(turmaNormalizada);
+        }
+
+        Set<String> turmasExistentes = studentRepository.findDistinctTurmas();
+
+        if (!turmasExistentes.containsAll(turmas)) {
+            throw new IllegalArgumentException(
+                    "Uma ou mais turmas selecionadas não estão cadastradas.");
+        }
+
+        return turmas;
     }
 
 }

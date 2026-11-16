@@ -1,24 +1,22 @@
 package br.com.kenzowebstudio.agenda_virtual.service;
 
 import java.util.List;
-
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
-
 import br.com.kenzowebstudio.agenda_virtual.dto.AnnouncementResponse;
+import br.com.kenzowebstudio.agenda_virtual.dto.MediaFileResponse;
 import br.com.kenzowebstudio.agenda_virtual.dto.ResponsibleEventResponse;
+import br.com.kenzowebstudio.agenda_virtual.dto.ResponsibleProfileResponse;
 import br.com.kenzowebstudio.agenda_virtual.dto.ResponsibleStudentResponse;
+import br.com.kenzowebstudio.agenda_virtual.model.Event;
 import br.com.kenzowebstudio.agenda_virtual.model.User;
 import br.com.kenzowebstudio.agenda_virtual.repository.AnnouncementRepository;
 import br.com.kenzowebstudio.agenda_virtual.repository.EventRepository;
 import br.com.kenzowebstudio.agenda_virtual.repository.StudentRepository;
-import br.com.kenzowebstudio.agenda_virtual.dto.MediaFileResponse;
-import org.springframework.transaction.annotation.Transactional;
-import br.com.kenzowebstudio.agenda_virtual.model.Event;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import br.com.kenzowebstudio.agenda_virtual.dto.ResponsibleProfileResponse;
 
 @Service
 public class ResponsibleService {
@@ -65,7 +63,8 @@ public class ResponsibleService {
         @Transactional(readOnly = true)
         public List<ResponsibleEventResponse> findEvents(User user) {
 
-                return eventRepository.findDistinctByStudentsUserIdOrderByDataAsc(user.getId())
+                return eventRepository
+                                .findEventsVisibleToResponsible(user.getId())
                                 .stream()
                                 .map(event -> new ResponsibleEventResponse(
                                                 event.getId(),
@@ -107,7 +106,7 @@ public class ResponsibleService {
         public ResponsibleEventResponse findEventById(Long id, User user) {
 
                 var event = eventRepository
-                                .findDistinctByIdAndStudentsUserId(id, user.getId())
+                                .findVisibleEventById(id, user.getId())
                                 .orElseThrow(() -> new ResponseStatusException(
                                                 HttpStatus.NOT_FOUND,
                                                 "Evento não encontrado"));
@@ -186,7 +185,7 @@ public class ResponsibleService {
         public MediaFileResponse findEventBanner(Long eventId, User user) {
 
                 var event = eventRepository
-                                .findDistinctByIdAndStudentsUserId(eventId, user.getId())
+                                .findVisibleEventById(eventId, user.getId())
                                 .orElseThrow(() -> new ResponseStatusException(
                                                 HttpStatus.NOT_FOUND,
                                                 "Evento não encontrado."));
@@ -210,5 +209,4 @@ public class ResponsibleService {
 
                 return event.getBannerUrl();
         }
-
 }

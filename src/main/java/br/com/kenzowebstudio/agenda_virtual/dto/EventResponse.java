@@ -8,20 +8,22 @@ import java.util.Set;
 import br.com.kenzowebstudio.agenda_virtual.model.EventStatus;
 
 public record EventResponse(
-                Long id,
-                String titulo,
-                String descricao,
-                LocalDate data,
-                LocalTime horaInicio,
-                LocalTime horaFim,
-                String local,
-                String observacoes,
-                String whatsappUrl,
-                String bannerUrl,
-                Long bannerMediaId,
-                EventStatus status,
-                Long createdBy,
-                LocalDateTime createdAt,
-                LocalDateTime updatedAt,
-                Set<StudentResponse> students) {
+        Long id,
+        String titulo,
+        String descricao,
+        LocalDate data,
+        LocalTime horaInicio,
+        LocalTime horaFim,
+        String local,
+        String observacoes,
+        String whatsappUrl,
+        String bannerUrl,
+        Long bannerMediaId,
+        EventStatus status,
+        Long createdBy,
+        LocalDateTime createdAt,
+        LocalDateTime updatedAt,
+        Set<StudentResponse> students,
+        Boolean paraTodos,
+        Set<String> turmas) {
 }
