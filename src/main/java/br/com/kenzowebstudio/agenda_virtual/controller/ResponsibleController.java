@@ -26,6 +26,10 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.web.bind.annotation.RequestParam;
 import br.com.kenzowebstudio.agenda_virtual.dto.ResponsibleProfileResponse;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import jakarta.validation.Valid;
+import br.com.kenzowebstudio.agenda_virtual.dto.UpdateResponsibleProfileRequest;
 
 @RestController
 @RequestMapping("/responsavel")
@@ -62,6 +66,16 @@ public class ResponsibleController {
 
         return ResponseEntity.ok(
                 responsibleService.findProfile(user));
+    }
+
+    @PatchMapping("/perfil")
+    @Operation(summary = "Atualizar perfil do responsável", description = "Atualiza nome e telefone do responsável autenticado mediante confirmação da senha atual")
+    public ResponseEntity<ResponsibleProfileResponse> updateProfile(
+            @AuthenticationPrincipal User user,
+            @Valid @RequestBody UpdateResponsibleProfileRequest request) {
+
+        return ResponseEntity.ok(
+                responsibleService.updateProfile(user, request));
     }
 
     @GetMapping("/eventos/paginados")

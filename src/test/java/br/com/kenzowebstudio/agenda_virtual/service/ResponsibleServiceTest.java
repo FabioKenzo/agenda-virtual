@@ -1,19 +1,17 @@
 package br.com.kenzowebstudio.agenda_virtual.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
-
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
 import br.com.kenzowebstudio.agenda_virtual.dto.ResponsibleEventResponse;
 import br.com.kenzowebstudio.agenda_virtual.dto.ResponsibleStudentResponse;
 import br.com.kenzowebstudio.agenda_virtual.model.Event;
@@ -22,12 +20,25 @@ import br.com.kenzowebstudio.agenda_virtual.model.Student;
 import br.com.kenzowebstudio.agenda_virtual.model.User;
 import br.com.kenzowebstudio.agenda_virtual.repository.EventRepository;
 import br.com.kenzowebstudio.agenda_virtual.repository.StudentRepository;
-
 import java.time.LocalDateTime;
-
 import br.com.kenzowebstudio.agenda_virtual.dto.AnnouncementResponse;
 import br.com.kenzowebstudio.agenda_virtual.model.Announcement;
 import br.com.kenzowebstudio.agenda_virtual.repository.AnnouncementRepository;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
+import java.util.Optional;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.web.server.ResponseStatusException;
+
+import br.com.kenzowebstudio.agenda_virtual.dto.ResponsibleProfileResponse;
+import br.com.kenzowebstudio.agenda_virtual.dto.UpdateResponsibleProfileRequest;
+import br.com.kenzowebstudio.agenda_virtual.model.Role;
+import br.com.kenzowebstudio.agenda_virtual.repository.UserRepository;
 
 @ExtendWith(MockitoExtension.class)
 class ResponsibleServiceTest {
@@ -40,6 +51,12 @@ class ResponsibleServiceTest {
 
         @Mock
         private AnnouncementRepository announcementRepository;
+
+        @Mock
+        private UserRepository userRepository;
+
+        @Mock
+        private PasswordEncoder passwordEncoder;
 
         @InjectMocks
         private ResponsibleService responsibleService;
@@ -187,4 +204,160 @@ class ResponsibleServiceTest {
                 verify(announcementRepository)
                                 .findByAtivoTrueOrderByCreatedAtDesc();
         }
+
+        @Test
+        void deveAtualizarPerfilQuandoSenhaAtualEstiverCorreta() {
+
+                // Arrange
+                LocalDateTime dataAnterior = LocalDateTime.of(2026, 1, 1, 10, 0);
+
+                User responsavel = User.builder()
+                                .id(10L)
+                                .nome("Responsável Antigo")
+                                .email("responsavel@teste.com")
+                                .telefone("11911111111")
+                                .senha("hash-bcrypt")
+                                .role(Role.RESPONSAVEL)
+                                .updatedAt(dataAnterior)
+                                .build();
+
+                UpdateResponsibleProfileRequest request = new UpdateResponsibleProfileRequest(
+                                "Responsável Atualizado",
+                                "11999999999",
+                                "senhaCorreta");
+
+                when(userRepository.findById(10L))
+                                .thenReturn(Optional.of(responsavel));
+
+                when(passwordEncoder.matches("senhaCorreta", "hash-bcrypt"))
+                                .thenReturn(true);
+
+                // Act
+                ResponsibleProfileResponse response = responsibleService.updateProfile(responsavel, request);
+
+                // Assert
+                assertEquals("Responsável Atualizado", response.nome());
+                assertEquals("11999999999", response.telefone());
+                assertEquals("responsavel@teste.com", response.email());
+                assertEquals(Role.RESPONSAVEL, response.role());
+
+                assertEquals("Responsável Atualizado", responsavel.getNome());
+                assertEquals("11999999999", responsavel.getTelefone());
+
+                assertNotNull(responsavel.getUpdatedAt());
+                assertFalse(responsavel.getUpdatedAt().isBefore(dataAnterior));
+
+                verify(userRepository).findById(10L);
+                verify(passwordEncoder).matches("senhaCorreta", "hash-bcrypt");
+        }
+
+        @Test
+        void naoDeveAtualizarPerfilQuandoSenhaAtualEstiverIncorreta() {
+
+                // Arrange
+                User responsavel = User.builder()
+                                .id(10L)
+                                .nome("Responsável Original")
+                                .email("responsavel@teste.com")
+                                .telefone("11911111111")
+                                .senha("hash-bcrypt")
+                                .role(Role.RESPONSAVEL)
+                                .build();
+
+                UpdateResponsibleProfileRequest request = new UpdateResponsibleProfileRequest(
+                                "Nome Alterado",
+                                "11999999999",
+                                "senhaErrada");
+
+                when(userRepository.findById(10L))
+                                .thenReturn(Optional.of(responsavel));
+
+                when(passwordEncoder.matches("senhaErrada", "hash-bcrypt"))
+                                .thenReturn(false);
+
+                // Act
+                ResponseStatusException exception = assertThrows(
+                                ResponseStatusException.class,
+                                () -> responsibleService.updateProfile(responsavel, request));
+
+                // Assert
+                assertEquals(HttpStatus.BAD_REQUEST, exception.getStatusCode());
+                assertEquals("Senha atual incorreta.", exception.getReason());
+
+                assertEquals("Responsável Original", responsavel.getNome());
+                assertEquals("11911111111", responsavel.getTelefone());
+                assertEquals("responsavel@teste.com", responsavel.getEmail());
+
+                verify(userRepository).findById(10L);
+                verify(passwordEncoder).matches("senhaErrada", "hash-bcrypt");
+        }
+
+        @Test
+        void naoDeveAtualizarPerfilQuandoResponsavelNaoExistir() {
+
+                // Arrange
+                User responsavel = User.builder()
+                                .id(10L)
+                                .build();
+
+                UpdateResponsibleProfileRequest request = new UpdateResponsibleProfileRequest(
+                                "Novo Nome",
+                                "11999999999",
+                                "senhaAtual");
+
+                when(userRepository.findById(10L))
+                                .thenReturn(Optional.empty());
+
+                // Act
+                ResponseStatusException exception = assertThrows(
+                                ResponseStatusException.class,
+                                () -> responsibleService.updateProfile(responsavel, request));
+
+                // Assert
+                assertEquals(HttpStatus.NOT_FOUND, exception.getStatusCode());
+                assertEquals("Responsável não encontrado.", exception.getReason());
+
+                verify(userRepository).findById(10L);
+                verify(passwordEncoder, never())
+                                .matches("senhaAtual", "senhaAtual");
+        }
+
+        @Test
+        void devePermitirRemoverTelefoneDoPerfil() {
+
+                // Arrange
+                User responsavel = User.builder()
+                                .id(10L)
+                                .nome("Responsável Teste")
+                                .email("responsavel@teste.com")
+                                .telefone("11999999999")
+                                .senha("hash-bcrypt")
+                                .role(Role.RESPONSAVEL)
+                                .build();
+
+                UpdateResponsibleProfileRequest request = new UpdateResponsibleProfileRequest(
+                                "Responsável Teste",
+                                "   ",
+                                "senhaCorreta");
+
+                when(userRepository.findById(10L))
+                                .thenReturn(Optional.of(responsavel));
+
+                when(passwordEncoder.matches("senhaCorreta", "hash-bcrypt"))
+                                .thenReturn(true);
+
+                // Act
+                ResponsibleProfileResponse response = responsibleService.updateProfile(responsavel, request);
+
+                // Assert
+                assertNull(response.telefone());
+                assertNull(responsavel.getTelefone());
+
+                assertEquals("Responsável Teste", response.nome());
+                assertEquals("responsavel@teste.com", response.email());
+
+                verify(userRepository).findById(10L);
+                verify(passwordEncoder).matches("senhaCorreta", "hash-bcrypt");
+        }
+
 }
