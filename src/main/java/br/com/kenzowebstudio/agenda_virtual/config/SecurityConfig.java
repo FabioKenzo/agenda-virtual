@@ -102,7 +102,7 @@ public class SecurityConfig {
                                 "GET",
                                 "POST",
                                 "PUT",
-                                "PATACH",
+                                "PATCH",
                                 "DELETE",
                                 "OPTIONS"));
 
