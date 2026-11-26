@@ -14,6 +14,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.dao.DataIntegrityViolationException;
 import java.sql.SQLException;
+import org.springframework.web.server.ResponseStatusException;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -87,6 +88,27 @@ public class GlobalExceptionHandler {
                                 status.value(),
                                 status.getReasonPhrase(),
                                 exception.getMessage(),
+                                request.getRequestURI());
+
+                return ResponseEntity.status(status).body(error);
+        }
+
+        @ExceptionHandler(ResponseStatusException.class)
+        public ResponseEntity<ApiErrorResponse> handleResponseStatusException(
+                        ResponseStatusException exception,
+                        HttpServletRequest request) {
+
+                HttpStatusCode status = exception.getStatusCode();
+
+                String message = exception.getReason() != null
+                                ? exception.getReason()
+                                : "Não foi possível concluir a solicitação.";
+
+                ApiErrorResponse error = new ApiErrorResponse(
+                                LocalDateTime.now(),
+                                status.value(),
+                                HttpStatus.valueOf(status.value()).getReasonPhrase(),
+                                message,
                                 request.getRequestURI());
 
                 return ResponseEntity.status(status).body(error);
