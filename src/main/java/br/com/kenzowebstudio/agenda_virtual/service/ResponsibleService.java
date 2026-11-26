@@ -17,6 +17,10 @@ import br.com.kenzowebstudio.agenda_virtual.model.User;
 import br.com.kenzowebstudio.agenda_virtual.repository.AnnouncementRepository;
 import br.com.kenzowebstudio.agenda_virtual.repository.EventRepository;
 import br.com.kenzowebstudio.agenda_virtual.repository.StudentRepository;
+import java.time.LocalDateTime;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import br.com.kenzowebstudio.agenda_virtual.dto.UpdateResponsibleProfileRequest;
+import br.com.kenzowebstudio.agenda_virtual.repository.UserRepository;
 
 @Service
 public class ResponsibleService {
@@ -25,20 +29,61 @@ public class ResponsibleService {
         private final EventRepository eventRepository;
         private final AnnouncementRepository announcementRepository;
         private final MediaService mediaService;
+        private final UserRepository userRepository;
+        private final PasswordEncoder passwordEncoder;
 
         public ResponsibleService(
                         StudentRepository studentRepository,
                         EventRepository eventRepository,
                         AnnouncementRepository announcementRepository,
-                        MediaService mediaService) {
+                        MediaService mediaService,
+                        UserRepository userRepository,
+                        PasswordEncoder passwordEncoder) {
 
                 this.studentRepository = studentRepository;
                 this.eventRepository = eventRepository;
                 this.announcementRepository = announcementRepository;
                 this.mediaService = mediaService;
+                this.userRepository = userRepository;
+                this.passwordEncoder = passwordEncoder;
         }
 
         public ResponsibleProfileResponse findProfile(User user) {
+
+                return new ResponsibleProfileResponse(
+                                user.getId(),
+                                user.getNome(),
+                                user.getEmail(),
+                                user.getTelefone(),
+                                user.getRole());
+        }
+
+        @Transactional
+        public ResponsibleProfileResponse updateProfile(
+                        User authenticatedUser,
+                        UpdateResponsibleProfileRequest request) {
+
+                User user = userRepository.findById(authenticatedUser.getId())
+                                .orElseThrow(() -> new ResponseStatusException(
+                                                HttpStatus.NOT_FOUND,
+                                                "Responsável não encontrado."));
+
+                if (!passwordEncoder.matches(
+                                request.senhaAtual(), user.getPassword())) {
+
+                        throw new ResponseStatusException(
+                                        HttpStatus.BAD_REQUEST,
+                                        "Senha atual incorreta.");
+                }
+
+                user.setNome(request.nome().trim());
+
+                user.setTelefone(
+                                request.telefone() == null || request.telefone().isBlank()
+                                                ? null
+                                                : request.telefone().trim());
+
+                user.setUpdatedAt(LocalDateTime.now());
 
                 return new ResponsibleProfileResponse(
                                 user.getId(),

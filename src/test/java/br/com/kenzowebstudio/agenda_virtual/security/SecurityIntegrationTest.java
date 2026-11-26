@@ -14,6 +14,8 @@ import br.com.kenzowebstudio.agenda_virtual.controller.ResponsibleController;
 import br.com.kenzowebstudio.agenda_virtual.service.ResponsibleService;
 import org.springframework.security.test.context.support.WithMockUser;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 import br.com.kenzowebstudio.agenda_virtual.service.EventService;
@@ -34,6 +36,8 @@ import java.util.Set;
 import br.com.kenzowebstudio.agenda_virtual.dto.EventRequest;
 import br.com.kenzowebstudio.agenda_virtual.dto.EventResponse;
 import br.com.kenzowebstudio.agenda_virtual.dto.MediaResponse;
+import br.com.kenzowebstudio.agenda_virtual.dto.ResponsibleProfileResponse;
+import br.com.kenzowebstudio.agenda_virtual.dto.UpdateResponsibleProfileRequest;
 import br.com.kenzowebstudio.agenda_virtual.model.EventStatus;
 import br.com.kenzowebstudio.agenda_virtual.model.User;
 import br.com.kenzowebstudio.agenda_virtual.controller.AnnouncementController;
@@ -54,6 +58,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import br.com.kenzowebstudio.agenda_virtual.exception.ResourceConflictException;
 import java.sql.SQLException;
 import org.springframework.dao.DataIntegrityViolationException;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
+import org.springframework.web.server.ResponseStatusException;
 
 @WebMvcTest(controllers = {
                 ResponsibleController.class,
@@ -562,6 +568,130 @@ class SecurityIntegrationTest {
                                                 "Não foi possível concluir a operação porque o registro está sendo utilizado por outro recurso."));
 
                 verify(mediaService).delete(10L);
+        }
+
+        @Test
+        void devePermitirAtualizacaoDePerfilParaResponsavelAutenticado()
+                        throws Exception {
+
+                // Arrange
+                User responsavel = User.builder()
+                                .id(10L)
+                                .nome("Responsável Teste")
+                                .email("responsavel@teste.com")
+                                .senha("hash-bcrypt")
+                                .role(Role.RESPONSAVEL)
+                                .ativo(true)
+                                .build();
+
+                ResponsibleProfileResponse response = new ResponsibleProfileResponse(
+                                10L,
+                                "Responsável Atualizado",
+                                "responsavel@teste.com",
+                                "11999999999",
+                                Role.RESPONSAVEL);
+
+                when(responsibleService.updateProfile(
+                                any(User.class),
+                                any(UpdateResponsibleProfileRequest.class)))
+                                .thenReturn(response);
+
+                String json = """
+                                {
+                                    "nome": "Responsável Atualizado",
+                                    "telefone": "11999999999",
+                                    "senhaAtual": "senhaCorreta"
+                                }
+                                """;
+
+                // Act & Assert
+                mockMvc.perform(
+                                patch("/responsavel/perfil")
+                                                .with(user(responsavel))
+                                                .with(csrf())
+                                                .contentType(MediaType.APPLICATION_JSON)
+                                                .content(json))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.id").value(10))
+                                .andExpect(jsonPath("$.nome").value("Responsável Atualizado"))
+                                .andExpect(jsonPath("$.email").value("responsavel@teste.com"))
+                                .andExpect(jsonPath("$.telefone").value("11999999999"))
+                                .andExpect(jsonPath("$.role").value("RESPONSAVEL"));
+
+                verify(responsibleService).updateProfile(
+                                org.mockito.ArgumentMatchers.same(responsavel),
+                                any(UpdateResponsibleProfileRequest.class));
+        }
+
+        @Test
+        void deveRetornarMensagemDeErroQuandoSenhaAtualForIncorreta()
+                        throws Exception {
+
+                // Arrange
+                User responsavel = User.builder()
+                                .id(10L)
+                                .nome("Responsável Teste")
+                                .email("responsavel@teste.com")
+                                .senha("hash-bcrypt")
+                                .role(Role.RESPONSAVEL)
+                                .ativo(true)
+                                .build();
+
+                when(responsibleService.updateProfile(
+                                any(User.class),
+                                any(UpdateResponsibleProfileRequest.class)))
+                                .thenThrow(new ResponseStatusException(
+                                                HttpStatus.BAD_REQUEST,
+                                                "Senha atual incorreta."));
+
+                String json = """
+                                {
+                                    "nome": "Responsável Atualizado",
+                                    "telefone": "11999999999",
+                                    "senhaAtual": "senhaIncorreta"
+                                }
+                                """;
+
+                // Act & Assert
+                mockMvc.perform(
+                                patch("/responsavel/perfil")
+                                                .with(user(responsavel))
+                                                .with(csrf())
+                                                .contentType(MediaType.APPLICATION_JSON)
+                                                .content(json))
+                                .andExpect(status().isBadRequest())
+                                .andExpect(jsonPath("$.status").value(400))
+                                .andExpect(jsonPath("$.error").value("Bad Request"))
+                                .andExpect(jsonPath("$.message").value("Senha atual incorreta."))
+                                .andExpect(jsonPath("$.path").value("/responsavel/perfil"));
+
+                verify(responsibleService).updateProfile(
+                                org.mockito.ArgumentMatchers.same(responsavel),
+                                any(UpdateResponsibleProfileRequest.class));
+        }
+
+        @Test
+        void deveBloquearAtualizacaoDePerfilSemAutenticacao()
+                        throws Exception {
+
+                // Arrange
+                String json = """
+                                {
+                                    "nome": "Responsável Atualizado",
+                                    "telefone": "11999999999",
+                                    "senhaAtual": "senhaCorreta"
+                                }
+                                """;
+
+                // Act & Assert
+                mockMvc.perform(
+                                patch("/responsavel/perfil")
+                                                .with(csrf())
+                                                .contentType(MediaType.APPLICATION_JSON)
+                                                .content(json))
+                                .andExpect(status().isUnauthorized());
+
+                verifyNoInteractions(responsibleService);
         }
 
 }
