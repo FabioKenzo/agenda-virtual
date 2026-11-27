@@ -14,7 +14,6 @@ import br.com.kenzowebstudio.agenda_virtual.controller.ResponsibleController;
 import br.com.kenzowebstudio.agenda_virtual.service.ResponsibleService;
 import org.springframework.security.test.context.support.WithMockUser;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
@@ -60,6 +59,8 @@ import java.sql.SQLException;
 import org.springframework.dao.DataIntegrityViolationException;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import org.springframework.web.server.ResponseStatusException;
+import br.com.kenzowebstudio.agenda_virtual.dto.ResponsibleStudentResponse;
+import br.com.kenzowebstudio.agenda_virtual.dto.CreateStudentsRequest;
 
 @WebMvcTest(controllers = {
                 ResponsibleController.class,
@@ -690,6 +691,141 @@ class SecurityIntegrationTest {
                                                 .contentType(MediaType.APPLICATION_JSON)
                                                 .content(json))
                                 .andExpect(status().isUnauthorized());
+
+                verifyNoInteractions(responsibleService);
+        }
+
+        @Test
+        void devePermitirCadastroDeMultiplosAlunosParaResponsavel()
+                        throws Exception {
+
+                // Arrange
+                User responsavel = User.builder()
+                                .id(10L)
+                                .nome("Responsável Teste")
+                                .email("responsavel@teste.com")
+                                .senha("hash-bcrypt")
+                                .role(Role.RESPONSAVEL)
+                                .ativo(true)
+                                .build();
+
+                List<ResponsibleStudentResponse> alunos = List.of(
+                                new ResponsibleStudentResponse(
+                                                1L,
+                                                "João da Silva",
+                                                LocalDate.of(2022, 5, 15),
+                                                "G3"),
+                                new ResponsibleStudentResponse(
+                                                2L,
+                                                "Maria da Silva",
+                                                LocalDate.of(2024, 3, 10),
+                                                "G1"));
+
+                when(responsibleService.createStudents(
+                                any(User.class),
+                                any(CreateStudentsRequest.class)))
+                                .thenReturn(alunos);
+
+                String json = """
+                                {
+                                    "alunos": [
+                                        {
+                                            "nome": "João da Silva",
+                                            "dataNascimento": "2022-05-15",
+                                            "turma": "G3"
+                                        },
+                                        {
+                                            "nome": "Maria da Silva",
+                                            "dataNascimento": "2024-03-10",
+                                            "turma": "G1"
+                                        }
+                                    ]
+                                }
+                                """;
+
+                // Act & Assert
+                mockMvc.perform(
+                                post("/responsavel/alunos")
+                                                .with(user(responsavel))
+                                                .with(csrf())
+                                                .contentType(MediaType.APPLICATION_JSON)
+                                                .content(json))
+                                .andExpect(status().isCreated())
+                                .andExpect(jsonPath("$.length()").value(2))
+                                .andExpect(jsonPath("$[0].id").value(1))
+                                .andExpect(jsonPath("$[0].nome").value("João da Silva"))
+                                .andExpect(jsonPath("$[0].turma").value("G3"))
+                                .andExpect(jsonPath("$[1].id").value(2))
+                                .andExpect(jsonPath("$[1].nome").value("Maria da Silva"))
+                                .andExpect(jsonPath("$[1].turma").value("G1"));
+
+                verify(responsibleService).createStudents(
+                                org.mockito.ArgumentMatchers.same(responsavel),
+                                any(CreateStudentsRequest.class));
+        }
+
+        @Test
+        void deveBloquearCadastroDeAlunosSemAutenticacao()
+                        throws Exception {
+
+                // Arrange
+                String json = """
+                                {
+                                    "alunos": [
+                                        {
+                                            "nome": "João da Silva",
+                                            "dataNascimento": "2022-05-15",
+                                            "turma": "G3"
+                                        }
+                                    ]
+                                }
+                                """;
+
+                // Act & Assert
+                mockMvc.perform(
+                                post("/responsavel/alunos")
+                                                .with(csrf())
+                                                .contentType(MediaType.APPLICATION_JSON)
+                                                .content(json))
+                                .andExpect(status().isUnauthorized());
+
+                verifyNoInteractions(responsibleService);
+        }
+
+        @Test
+        void deveBloquearCadastroDeAlunosParaAdmin()
+                        throws Exception {
+
+                // Arrange
+                User admin = User.builder()
+                                .id(1L)
+                                .nome("Administrador Teste")
+                                .email("admin@teste.com")
+                                .senha("hash-bcrypt")
+                                .role(Role.ADMIN)
+                                .ativo(true)
+                                .build();
+
+                String json = """
+                                {
+                                    "alunos": [
+                                        {
+                                            "nome": "João da Silva",
+                                            "dataNascimento": "2022-05-15",
+                                            "turma": "G3"
+                                        }
+                                    ]
+                                }
+                                """;
+
+                // Act & Assert
+                mockMvc.perform(
+                                post("/responsavel/alunos")
+                                                .with(user(admin))
+                                                .with(csrf())
+                                                .contentType(MediaType.APPLICATION_JSON)
+                                                .content(json))
+                                .andExpect(status().isForbidden());
 
                 verifyNoInteractions(responsibleService);
         }

@@ -5,10 +5,12 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import br.com.kenzowebstudio.agenda_virtual.model.Student;
 import org.springframework.data.jpa.repository.Query;
 import java.util.Set;
+import java.util.Optional;
 
 public interface StudentRepository extends JpaRepository<Student, Long> {
 
     List<Student> findByUserId(Long userId);
+    Optional<Student> findByIdAndUserId(Long id, Long userId);
 
     @Query("""
             SELECT DISTINCT s.turma

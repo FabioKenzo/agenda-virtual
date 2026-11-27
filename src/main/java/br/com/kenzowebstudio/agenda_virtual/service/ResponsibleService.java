@@ -21,6 +21,10 @@ import java.time.LocalDateTime;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import br.com.kenzowebstudio.agenda_virtual.dto.UpdateResponsibleProfileRequest;
 import br.com.kenzowebstudio.agenda_virtual.repository.UserRepository;
+import java.util.ArrayList;
+import br.com.kenzowebstudio.agenda_virtual.dto.CreateStudentsRequest;
+import br.com.kenzowebstudio.agenda_virtual.model.Student;
+import br.com.kenzowebstudio.agenda_virtual.dto.UpdateStudentRequest;
 
 @Service
 public class ResponsibleService {
@@ -103,6 +107,97 @@ public class ResponsibleService {
                                                 student.getDataNascimento(),
                                                 student.getTurma()))
                                 .toList();
+        }
+
+        @Transactional
+        public List<ResponsibleStudentResponse> createStudents(
+                        User authenticatedUser,
+                        CreateStudentsRequest request) {
+
+                // Busca o responsável autenticado no banco
+                User responsavel = userRepository.findById(authenticatedUser.getId())
+                                .orElseThrow(() -> new ResponseStatusException(
+                                                HttpStatus.NOT_FOUND,
+                                                "Responsável não encontrado."));
+
+                // Verifica se a conta está ativa
+                if (!responsavel.getAtivo()) {
+                        throw new ResponseStatusException(
+                                        HttpStatus.FORBIDDEN,
+                                        "A conta do responsável está inativa.");
+                }
+
+                List<Student> students = new ArrayList<>();
+
+                for (var alunoRequest : request.alunos()) {
+
+                        Student student = Student.builder()
+                                        .nome(alunoRequest.nome().trim())
+                                        .dataNascimento(alunoRequest.dataNascimento())
+                                        .turma(alunoRequest.turma())
+                                        .user(responsavel)
+                                        .createdAt(LocalDateTime.now())
+                                        .build();
+
+                        students.add(student);
+                }
+
+                // Persiste todos os alunos na mesma transação
+                List<Student> savedStudents = studentRepository.saveAll(students);
+
+                // Converte as entidades para o DTO de resposta
+                return savedStudents.stream()
+                                .map(student -> new ResponsibleStudentResponse(
+                                                student.getId(),
+                                                student.getNome(),
+                                                student.getDataNascimento(),
+                                                student.getTurma()))
+                                .toList();
+        }
+
+        @Transactional
+        public ResponsibleStudentResponse updateStudent(
+                        Long studentId,
+                        User authenticatedUser,
+                        UpdateStudentRequest request) {
+
+                User responsavel = userRepository
+                                .findById(authenticatedUser.getId())
+                                .orElseThrow(() -> new ResponseStatusException(
+                                                HttpStatus.NOT_FOUND,
+                                                "Responsável não encontrado."));
+
+                if (!Boolean.TRUE.equals(responsavel.getAtivo())) {
+                        throw new ResponseStatusException(
+                                        HttpStatus.FORBIDDEN,
+                                        "A conta do responsável está inativa.");
+                }
+
+                Student student = studentRepository
+                                .findByIdAndUserId(studentId, responsavel.getId())
+                                .orElseThrow(() -> new ResponseStatusException(
+                                                HttpStatus.NOT_FOUND,
+                                                "Aluno não encontrado."));
+
+                // Confirma a senha antes de alterar os dados
+                if (!passwordEncoder.matches(
+                                request.senhaAtual(),
+                                responsavel.getPassword())) {
+
+                        throw new ResponseStatusException(
+                                        HttpStatus.BAD_REQUEST,
+                                        "Senha atual incorreta.");
+                }
+
+                student.setNome(request.nome().trim());
+                student.setDataNascimento(request.dataNascimento());
+                student.setTurma(request.turma());
+
+                return new ResponsibleStudentResponse(
+                                student.getId(),
+                                student.getNome(),
+                                student.getDataNascimento(),
+                                student.getTurma());
         }
 
         @Transactional(readOnly = true)
