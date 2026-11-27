@@ -28,17 +28,21 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-
 import java.util.Optional;
-
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.server.ResponseStatusException;
-
 import br.com.kenzowebstudio.agenda_virtual.dto.ResponsibleProfileResponse;
 import br.com.kenzowebstudio.agenda_virtual.dto.UpdateResponsibleProfileRequest;
 import br.com.kenzowebstudio.agenda_virtual.model.Role;
 import br.com.kenzowebstudio.agenda_virtual.repository.UserRepository;
+import static org.mockito.ArgumentMatchers.anyList;
+import java.util.ArrayList;
+import br.com.kenzowebstudio.agenda_virtual.dto.CreateStudentRequest;
+import br.com.kenzowebstudio.agenda_virtual.dto.CreateStudentsRequest;
+import org.mockito.ArgumentCaptor;
+import jakarta.validation.Validation;
+import jakarta.validation.Validator;
 
 @ExtendWith(MockitoExtension.class)
 class ResponsibleServiceTest {
@@ -358,6 +362,258 @@ class ResponsibleServiceTest {
 
                 verify(userRepository).findById(10L);
                 verify(passwordEncoder).matches("senhaCorreta", "hash-bcrypt");
+        }
+
+        @Test
+        void deveCadastrarMultiplosAlunosParaResponsavel() {
+
+                // Arrange
+                User responsavel = User.builder()
+                                .id(10L)
+                                .nome("Responsável Teste")
+                                .role(Role.RESPONSAVEL)
+                                .ativo(true)
+                                .build();
+
+                CreateStudentsRequest request = new CreateStudentsRequest(
+                                List.of(
+                                                new CreateStudentRequest(
+                                                                " João da Silva ",
+                                                                LocalDate.of(2022, 5, 15),
+                                                                "G3"),
+                                                new CreateStudentRequest(
+                                                                "Maria da Silva",
+                                                                LocalDate.of(2024, 3, 10),
+                                                                "G1")));
+
+                when(userRepository.findById(10L))
+                                .thenReturn(Optional.of(responsavel));
+
+                when(studentRepository.saveAll(anyList()))
+                                .thenAnswer(invocation -> {
+                                        List<Student> alunos = invocation.getArgument(0);
+
+                                        List<Student> salvos = new ArrayList<>();
+
+                                        for (int i = 0; i < alunos.size(); i++) {
+                                                Student aluno = alunos.get(i);
+                                                aluno.setId((long) (i + 1));
+                                                salvos.add(aluno);
+                                        }
+
+                                        return salvos;
+                                });
+
+                // Act
+                List<ResponsibleStudentResponse> response = responsibleService.createStudents(responsavel, request);
+
+                // Assert
+                assertEquals(2, response.size());
+
+                assertEquals(1L, response.get(0).id());
+                assertEquals("João da Silva", response.get(0).nome());
+                assertEquals(LocalDate.of(2022, 5, 15), response.get(0).dataNascimento());
+                assertEquals("G3", response.get(0).turma());
+
+                assertEquals(2L, response.get(1).id());
+                assertEquals("Maria da Silva", response.get(1).nome());
+                assertEquals(LocalDate.of(2024, 3, 10), response.get(1).dataNascimento());
+                assertEquals("G1", response.get(1).turma());
+
+                ArgumentCaptor<List<Student>> captor = ArgumentCaptor.forClass(List.class);
+
+                verify(studentRepository).saveAll(captor.capture());
+
+                List<Student> alunosPersistidos = captor.getValue();
+
+                assertEquals(2, alunosPersistidos.size());
+
+                for (Student aluno : alunosPersistidos) {
+                        assertEquals(10L, aluno.getUser().getId());
+                        assertNotNull(aluno.getCreatedAt());
+                }
+
+                verify(userRepository).findById(10L);
+        }
+
+        @Test
+        void naoDeveCadastrarAlunosQuandoResponsavelNaoExistir() {
+
+                // Arrange
+                User responsavel = User.builder()
+                                .id(10L)
+                                .build();
+
+                CreateStudentsRequest request = new CreateStudentsRequest(
+                                List.of(
+                                                new CreateStudentRequest(
+                                                                "João da Silva",
+                                                                LocalDate.of(2022, 5, 15),
+                                                                "G3")));
+
+                when(userRepository.findById(10L))
+                                .thenReturn(Optional.empty());
+
+                // Act
+                ResponseStatusException exception = assertThrows(
+                                ResponseStatusException.class,
+                                () -> responsibleService.createStudents(responsavel, request));
+
+                // Assert
+                assertEquals(HttpStatus.NOT_FOUND, exception.getStatusCode());
+
+                assertEquals(
+                                "Responsável não encontrado.",
+                                exception.getReason());
+
+                verify(userRepository).findById(10L);
+
+                verify(studentRepository, never()).saveAll(anyList());
+        }
+
+        @Test
+        void naoDeveCadastrarAlunosQuandoResponsavelEstiverInativo() {
+
+                // Arrange
+                User responsavel = User.builder()
+                                .id(10L)
+                                .nome("Responsável Teste")
+                                .role(Role.RESPONSAVEL)
+                                .ativo(false)
+                                .build();
+
+                CreateStudentsRequest request = new CreateStudentsRequest(
+                                List.of(
+                                                new CreateStudentRequest(
+                                                                "João da Silva",
+                                                                LocalDate.of(2022, 5, 15),
+                                                                "G3")));
+
+                when(userRepository.findById(10L))
+                                .thenReturn(Optional.of(responsavel));
+
+                // Act
+                ResponseStatusException exception = assertThrows(
+                                ResponseStatusException.class,
+                                () -> responsibleService.createStudents(responsavel, request));
+
+                // Assert
+                assertEquals(HttpStatus.FORBIDDEN, exception.getStatusCode());
+
+                assertEquals(
+                                "A conta do responsável está inativa.",
+                                exception.getReason());
+
+                verify(userRepository).findById(10L);
+
+                verify(studentRepository, never()).saveAll(anyList());
+        }
+
+        @Test
+        void naoDevePermitirCadastroComListaDeAlunosVazia() {
+
+                // Arrange
+                CreateStudentsRequest request = new CreateStudentsRequest(List.of());
+
+                try (var factory = Validation.buildDefaultValidatorFactory()) {
+
+                        Validator validator = factory.getValidator();
+
+                        // Act
+                        var violations = validator.validate(request);
+
+                        // Assert
+                        assertFalse(violations.isEmpty());
+
+                        assertEquals(
+                                        "Informe pelo menos um aluno.",
+                                        violations.iterator().next().getMessage());
+                }
+        }
+
+        @Test
+        void naoDevePermitirCadastroComTurmaInvalida() {
+
+                // Arrange
+                CreateStudentsRequest request = new CreateStudentsRequest(
+                                List.of(
+                                                new CreateStudentRequest(
+                                                                "João da Silva",
+                                                                LocalDate.of(2022, 5, 15),
+                                                                "G6")));
+
+                try (var factory = Validation.buildDefaultValidatorFactory()) {
+
+                        Validator validator = factory.getValidator();
+
+                        // Act
+                        var violations = validator.validate(request);
+
+                        // Assert
+                        assertEquals(1, violations.size());
+
+                        assertEquals(
+                                        "A turma deve ser G1, G2, G3, G4 ou G5.",
+                                        violations.iterator().next().getMessage());
+                }
+        }
+
+        @Test
+        void naoDevePermitirCadastroComDataNascimentoFutura() {
+
+                // Arrange
+                CreateStudentsRequest request = new CreateStudentsRequest(
+                                List.of(
+                                                new CreateStudentRequest(
+                                                                "João da Silva",
+                                                                LocalDate.now().plusDays(1),
+                                                                "G3")));
+
+                try (var factory = Validation.buildDefaultValidatorFactory()) {
+
+                        Validator validator = factory.getValidator();
+
+                        // Act
+                        var violations = validator.validate(request);
+
+                        // Assert
+                        assertEquals(1, violations.size());
+
+                        assertEquals(
+                                        "A data de nascimento não pode ser futura.",
+                                        violations.iterator().next().getMessage());
+                }
+        }
+
+        @Test
+        void naoDevePermitirCadastroComMaisDeDezAlunos() {
+
+                // Arrange
+                List<CreateStudentRequest> alunos = new ArrayList<>();
+
+                for (int i = 1; i <= 11; i++) {
+                        alunos.add(new CreateStudentRequest(
+                                        "Aluno " + i,
+                                        LocalDate.of(2022, 5, 15),
+                                        "G3"));
+                }
+
+                CreateStudentsRequest request = new CreateStudentsRequest(alunos);
+
+                try (var factory = Validation.buildDefaultValidatorFactory()) {
+
+                        Validator validator = factory.getValidator();
+
+                        // Act
+                        var violations = validator.validate(request);
+
+                        // Assert
+                        assertEquals(1, violations.size());
+
+                        assertEquals(
+                                        "É permitido cadastrar no máximo 10 alunos por vez.",
+                                        violations.iterator().next().getMessage());
+                }
         }
 
 }
